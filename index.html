@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Outils Ecole</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#f0f4ff;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.page{max-width:600px;width:100%;text-align:center}
+h1{font-size:2.2rem;font-weight:800;color:#1e293b;margin-bottom:8px}
+p{color:#64748b;margin-bottom:30px}
+.cards{display:grid;gap:16px}
+a.card{display:block;background:#fff;border-radius:16px;padding:28px 24px;text-decoration:none;color:#1e293b;box-shadow:0 2px 12px rgba(0,0,0,0.08);transition:all 0.2s;border:2px solid transparent}
+a.card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(37,99,235,0.15);border-color:#2563eb}
+.card-icon{font-size:2.5rem;margin-bottom:10px}
+.card-title{font-size:1.3rem;font-weight:700;margin-bottom:6px}
+.card-desc{font-size:0.9rem;color:#64748b;line-height:1.5}
+.foot{margin-top:30px;font-size:0.8rem;color:#94a3b8}
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Outils Ecole</h1>
+  <p>Applications pedagogiques hors ligne pour la classe</p>
+  <div class="cards">
+    <a class="card" href="sudoku.html">
+      <div class="card-icon">🧩</div>
+      <div class="card-title">Sudoku Pedagogique</div>
+      <div class="card-desc">Generateur de sudokus 4x4, 6x6, 9x9 avec formes, lettres, chiffres, images. Multi-niveaux, multi-polices, impression.</div>
+    </a>
+    <a class="card" href="boite-a-mots.html">
+      <div class="card-icon">📦</div>
+      <div class="card-title">Boite a Mots</div>
+      <div class="card-desc">Generateur de mots en differentes polices pour ecran numerique ou cle USB. Import CSV/Excel, multi-polices, impression.</div>
+    </a>
+  </div>
+  <div class="foot">Fonctionne hors ligne — ouvrir les fichiers HTML directement dans un navigateur</div>
+</div>
+</body>
+</html>

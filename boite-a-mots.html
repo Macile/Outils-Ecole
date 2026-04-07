@@ -213,6 +213,20 @@ textarea::placeholder { color: var(--text-light); }
 .upload-zone p { font-size: 0.9rem; color: var(--text-light); }
 .upload-zone .formats { font-size: 0.8rem; color: var(--border); margin-top: 4px; }
 
+.import-zone {
+  padding: 18px;
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #fdfaf5;
+}
+.import-zone:hover, .import-zone.dragover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
 .custom-font-list {
   display: flex;
   flex-wrap: wrap;
@@ -332,6 +346,28 @@ ecole
 soleil"></textarea>
     <div style="margin-top:6px; font-size:0.85rem; color:var(--text-light);">
       <span id="wordCount">0</span> mot(s) saisi(s)
+    </div>
+
+    <div style="margin-top:14px; padding-top:14px; border-top:1px solid var(--border);">
+      <label style="font-weight:600; font-size:0.9rem; margin-bottom:8px; display:block;">Ou importer depuis un fichier</label>
+      <div class="import-zone" id="importZone">
+        <div style="font-size:1.5rem; margin-bottom:4px;">📄</div>
+        <p style="font-weight:600;">Glissez un fichier ici ou cliquez pour parcourir</p>
+        <p style="font-size:0.8rem; color:var(--text-light); margin-top:4px;">
+          Formats acceptes : <strong>.csv</strong>, <strong>.tsv</strong>, <strong>.txt</strong>, <strong>.xlsx</strong><br>
+          La premiere colonne de chaque ligne sera utilisee comme mot.
+        </p>
+        <input type="file" id="importFileInput" accept=".csv,.tsv,.txt,.xlsx,.xls" style="display:none">
+      </div>
+      <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
+        <label style="font-size:0.85rem; display:flex; align-items:center; gap:4px;">
+          <input type="radio" name="importMode" value="replace" checked> Remplacer les mots
+        </label>
+        <label style="font-size:0.85rem; display:flex; align-items:center; gap:4px;">
+          <input type="radio" name="importMode" value="append"> Ajouter aux mots existants
+        </label>
+      </div>
+      <div id="importStatus" style="display:none; margin-top:8px; font-size:0.85rem; font-weight:600;"></div>
     </div>
   </div>
 
@@ -594,6 +630,178 @@ wordInput.addEventListener('input', () => {
 });
 
 quantityInput.addEventListener('input', updateQuantityInfo);
+
+/* ======================================================================
+   FILE IMPORT (CSV, TSV, TXT, XLSX)
+   ====================================================================== */
+
+const importZone = document.getElementById('importZone');
+const importFileInput = document.getElementById('importFileInput');
+const importStatus = document.getElementById('importStatus');
+
+importZone.addEventListener('click', () => importFileInput.click());
+importZone.addEventListener('dragover', e => { e.preventDefault(); importZone.classList.add('dragover'); });
+importZone.addEventListener('dragleave', () => importZone.classList.remove('dragover'));
+importZone.addEventListener('drop', e => {
+  e.preventDefault();
+  importZone.classList.remove('dragover');
+  if (e.dataTransfer.files.length) handleImportFile(e.dataTransfer.files[0]);
+});
+importFileInput.addEventListener('change', () => {
+  if (importFileInput.files.length) handleImportFile(importFileInput.files[0]);
+  importFileInput.value = '';
+});
+
+function showImportStatus(msg, ok) {
+  importStatus.style.display = 'block';
+  importStatus.style.color = ok ? '#16a34a' : '#ea580c';
+  importStatus.textContent = msg;
+}
+
+function getImportMode() {
+  return document.querySelector('input[name="importMode"]:checked').value;
+}
+
+function applyImportedWords(words) {
+  const mode = getImportMode();
+  if (mode === 'append' && wordInput.value.trim()) {
+    wordInput.value = wordInput.value.trimEnd() + '\n' + words.join('\n');
+  } else {
+    wordInput.value = words.join('\n');
+  }
+  wordInput.dispatchEvent(new Event('input'));
+  showImportStatus(words.length + ' mot(s) importe(s)', true);
+}
+
+function parseCSV(text) {
+  // Handle CSV, TSV, semicolon-separated
+  const lines = text.split(/\r?\n/);
+  const words = [];
+  for (const line of lines) {
+    // Split by comma, semicolon, or tab
+    const cells = line.split(/[,;\t]/);
+    const first = (cells[0] || '').replace(/^["']|["']$/g, '').trim();
+    if (first) words.push(first);
+  }
+  return words;
+}
+
+function parseXLSX(arrayBuffer) {
+  // Minimal XLSX parser: read shared strings from xl/sharedStrings.xml
+  // XLSX = ZIP file containing XML
+  try {
+    const bytes = new Uint8Array(arrayBuffer);
+    // Find ZIP entries using local file headers
+    const entries = [];
+    let offset = 0;
+    while (offset < bytes.length - 4) {
+      if (bytes[offset] === 0x50 && bytes[offset+1] === 0x4B && bytes[offset+2] === 3 && bytes[offset+3] === 4) {
+        const nameLen = bytes[offset+26] | (bytes[offset+27] << 8);
+        const extraLen = bytes[offset+28] | (bytes[offset+29] << 8);
+        const compSize = bytes[offset+18] | (bytes[offset+19] << 8) | (bytes[offset+20] << 16) | (bytes[offset+21] << 24);
+        const name = new TextDecoder().decode(bytes.slice(offset+30, offset+30+nameLen));
+        const dataStart = offset + 30 + nameLen + extraLen;
+        entries.push({ name, data: bytes.slice(dataStart, dataStart + compSize), compressed: bytes[offset+8] | (bytes[offset+9] << 8) });
+        offset = dataStart + compSize;
+      } else {
+        offset++;
+      }
+    }
+
+    // Try to find sheet1.xml (uncompressed) or sharedStrings
+    // For simple xlsx, try sheet data directly
+    let sheetData = null;
+    let sharedStrings = null;
+
+    for (const e of entries) {
+      const nameLower = e.name.toLowerCase();
+      if (nameLower.includes('sheet1.xml') || nameLower.includes('sheet.xml')) {
+        if (e.compressed === 0) sheetData = new TextDecoder().decode(e.data);
+      }
+      if (nameLower.includes('sharedstrings.xml')) {
+        if (e.compressed === 0) sharedStrings = new TextDecoder().decode(e.data);
+      }
+    }
+
+    // If compressed, we can't parse without a decompression lib
+    // Fall back: try reading the whole file as text and extract what looks like words
+    if (!sheetData && !sharedStrings) {
+      // Try raw text extraction as fallback
+      const rawText = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+      const matches = rawText.match(/<t[^>]*>([^<]+)<\/t>/g);
+      if (matches) {
+        const words = matches.map(m => m.replace(/<\/?t[^>]*>/g, '').trim()).filter(w => w && w.length > 1 && !/^\d+$/.test(w));
+        return words;
+      }
+      return null;
+    }
+
+    // Parse shared strings
+    const sstrings = [];
+    if (sharedStrings) {
+      const tmatches = sharedStrings.match(/<t[^>]*>([^<]+)<\/t>/g) || [];
+      for (const m of tmatches) {
+        sstrings.push(m.replace(/<\/?t[^>]*>/g, '').trim());
+      }
+    }
+
+    // Parse sheet to get first column values
+    if (sheetData) {
+      const words = [];
+      // Find all cells in column A: <c r="A1" ...> ... </c>
+      const cellRegex = /<c\s+r="A\d+"[^>]*>([\s\S]*?)<\/c>/g;
+      let match;
+      while ((match = cellRegex.exec(sheetData)) !== null) {
+        const cellContent = match[1];
+        // Check if it references shared string (t="s")
+        if (match[0].includes('t="s"')) {
+          const vMatch = cellContent.match(/<v>(\d+)<\/v>/);
+          if (vMatch) {
+            const idx = parseInt(vMatch[1]);
+            if (sstrings[idx]) words.push(sstrings[idx]);
+          }
+        } else {
+          // Inline value
+          const vMatch = cellContent.match(/<v>([^<]+)<\/v>/);
+          if (vMatch) words.push(vMatch[1].trim());
+        }
+      }
+      return words.filter(w => w.length > 0);
+    }
+
+    return sstrings.filter(w => w.length > 0);
+  } catch (e) {
+    return null;
+  }
+}
+
+async function handleImportFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+
+  if (['csv', 'tsv', 'txt'].includes(ext)) {
+    const text = await file.text();
+    const words = parseCSV(text);
+    if (words.length === 0) {
+      showImportStatus('Aucun mot trouve dans ce fichier.', false);
+      return;
+    }
+    applyImportedWords(words);
+    return;
+  }
+
+  if (['xlsx', 'xls'].includes(ext)) {
+    const buffer = await file.arrayBuffer();
+    const words = parseXLSX(buffer);
+    if (!words || words.length === 0) {
+      showImportStatus('Impossible de lire ce fichier Excel. Essayez de l\'exporter en CSV.', false);
+      return;
+    }
+    applyImportedWords(words);
+    return;
+  }
+
+  showImportStatus('Format non supporte. Utilisez .csv, .tsv, .txt ou .xlsx.', false);
+}
 
 function getWords() {
   return wordInput.value.split('\n').map(w => w.trim()).filter(w => w.length > 0);
