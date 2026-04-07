@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Boite a Mots - Generateur pedagogique</title>
+<style>
+/* ========== RESET & BASE ========== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --primary: #2563eb;
+  --primary-light: #dbeafe;
+  --success: #16a34a;
+  --warning: #ea580c;
+  --bg: #f0f4ff;
+  --card: #ffffff;
+  --text: #1e293b;
+  --text-light: #64748b;
+  --border: #cbd5e1;
+  --radius: 12px;
+  --shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+/* ========== HEADER ========== */
+.app-header {
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  color: white;
+  padding: 18px 24px;
+  text-align: center;
+  box-shadow: 0 2px 12px rgba(37,99,235,0.3);
+}
+.app-header h1 { font-size: 1.8rem; font-weight: 700; }
+.app-header p { font-size: 0.95rem; opacity: 0.9; margin-top: 4px; }
+
+.main-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ========== PANELS ========== */
+.panel {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+}
+.panel-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--primary-light);
+  color: var(--primary);
+}
+
+/* ========== OPTIONS ========== */
+.options-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.option-group { flex: 1; min-width: 200px; }
+.option-group label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 6px;
+  color: var(--text-light);
+}
+.option-group select,
+.option-group input[type="number"] {
+  width: 100%;
+  padding: 10px 14px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  font-size: 1rem;
+  background: white;
+  cursor: pointer;
+}
+.option-group select:focus,
+.option-group input:focus { outline: none; border-color: var(--primary); }
+
+/* ========== TEXTAREA ========== */
+textarea {
+  width: 100%;
+  min-height: 140px;
+  padding: 12px 14px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+  resize: vertical;
+  line-height: 1.6;
+}
+textarea:focus { outline: none; border-color: var(--primary); }
+textarea::placeholder { color: var(--text-light); }
+
+/* ========== BUTTONS ========== */
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 14px;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 22px;
+  border: none;
+  border-radius: 10px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: white;
+  min-height: 48px;
+}
+.btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+.btn:active { transform: translateY(0); }
+.btn-primary { background: var(--primary); }
+.btn-success { background: var(--success); }
+.btn-warning { background: var(--warning); }
+.btn-purple { background: #7c3aed; }
+.btn-dark { background: #334155; }
+.btn-outline {
+  background: white; color: var(--primary); border: 2px solid var(--primary);
+}
+.btn-outline:hover { background: var(--primary-light); }
+.btn-icon { font-size: 1.3rem; line-height: 1; }
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* ========== FONT CATEGORY ========== */
+.font-category {
+  margin-bottom: 12px;
+}
+.font-category-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+.font-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.font-option {
+  padding: 10px 16px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s;
+  background: white;
+  text-align: center;
+  min-width: 120px;
+}
+.font-option:hover { border-color: var(--primary); background: var(--primary-light); }
+.font-option.selected {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.2);
+}
+.font-option .font-name {
+  font-size: 0.75rem;
+  color: var(--text-light);
+  margin-bottom: 2px;
+}
+.font-option .font-preview {
+  font-size: 1.2rem;
+  line-height: 1.3;
+}
+
+/* ========== UPLOAD ZONE ========== */
+.upload-zone {
+  margin-top: 12px;
+  padding: 20px;
+  border: 2px dashed var(--border);
+  border-radius: 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.upload-zone:hover, .upload-zone.dragover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+.upload-zone .upload-icon { font-size: 2rem; margin-bottom: 6px; }
+.upload-zone p { font-size: 0.9rem; color: var(--text-light); }
+.upload-zone .formats { font-size: 0.8rem; color: var(--border); margin-top: 4px; }
+
+.custom-font-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.custom-font-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #f1f5f9;
+  border-radius: 20px;
+  font-size: 0.85rem;
+}
+.custom-font-tag button {
+  background: none;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0;
+}
+
+/* ========== QUANTITY INFO ========== */
+.quantity-info {
+  font-size: 0.85rem;
+  color: var(--text-light);
+  margin-top: 4px;
+  min-height: 1.3em;
+}
+.quantity-info.warn {
+  color: var(--warning);
+  font-weight: 600;
+}
+
+/* ========== PREVIEW ========== */
+.preview-frame {
+  width: 100%;
+  height: 500px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: white;
+}
+
+/* ========== TOAST ========== */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: #1e293b;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  z-index: 9999;
+  opacity: 0;
+  transition: all 0.3s;
+  pointer-events: none;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ========== PRINT STYLES ========== */
+@media print {
+  body { background: white; }
+  .app-header, .panel, .btn-row, .toast, .no-print { display: none !important; }
+  .print-page {
+    display: block !important;
+    padding: 20mm;
+  }
+  .print-page h2 {
+    text-align: center;
+    margin-bottom: 15mm;
+    font-size: 18pt;
+  }
+  .print-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12mm;
+    justify-items: center;
+  }
+  .print-word {
+    font-size: 22pt;
+    padding: 5mm;
+    text-align: center;
+    page-break-inside: avoid;
+  }
+}
+
+/* ========== PRINT PAGE (screen hidden) ========== */
+.print-page { display: none; }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <h1>Boite a Mots</h1>
+  <p>Generateur de mots en differentes polices pour la classe</p>
+</header>
+
+<div class="main-container">
+
+  <!-- PANEL: Saisie des mots -->
+  <div class="panel">
+    <div class="panel-title">1. Saisir les mots</div>
+    <textarea id="wordInput" placeholder="Entrez un mot par ligne...
+Exemple :
+chat
+maison
+ecole
+soleil"></textarea>
+    <div style="margin-top:6px; font-size:0.85rem; color:var(--text-light);">
+      <span id="wordCount">0</span> mot(s) saisi(s)
+    </div>
+  </div>
+
+  <!-- PANEL: Choix de police -->
+  <div class="panel">
+    <div class="panel-title">2. Choisir les polices (plusieurs = melange)</div>
+
+    <div class="font-category">
+      <div class="font-category-title">Cursive scolaire</div>
+      <div class="font-grid" id="fontsCursive"></div>
+    </div>
+
+    <div class="font-category">
+      <div class="font-category-title">Script (lettres detachees)</div>
+      <div class="font-grid" id="fontsScript"></div>
+    </div>
+
+    <div class="font-category">
+      <div class="font-category-title">Imprimerie / Capitales</div>
+      <div class="font-grid" id="fontsCaps"></div>
+    </div>
+
+    <div class="font-category">
+      <div class="font-category-title">Police personnalisee</div>
+      <div class="upload-zone" id="uploadZone">
+        <div class="upload-icon">+</div>
+        <p>Glissez un fichier de police ici ou cliquez pour parcourir</p>
+        <div class="formats">.ttf, .otf, .woff, .woff2</div>
+        <input type="file" id="fontFileInput" accept=".ttf,.otf,.woff,.woff2" style="display:none" multiple>
+      </div>
+      <div class="custom-font-list" id="customFontList"></div>
+    </div>
+  </div>
+
+  <!-- PANEL: Quantite -->
+  <div class="panel">
+    <div class="panel-title">3. Nombre de mots a afficher</div>
+    <div class="options-row">
+      <div class="option-group" style="max-width:200px;">
+        <label for="quantityInput">Quantite</label>
+        <input type="number" id="quantityInput" min="1" max="200" value="10">
+      </div>
+    </div>
+    <div class="quantity-info" id="quantityInfo"></div>
+  </div>
+
+  <!-- PANEL: Actions -->
+  <div class="panel">
+    <div class="panel-title">4. Generer</div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="generatePreview()">
+        <span class="btn-icon">&#128065;</span> Apercu
+      </button>
+      <button class="btn btn-success" onclick="downloadHtml()">
+        <span class="btn-icon">&#128190;</span> Telecharger HTML
+      </button>
+      <button class="btn btn-dark" onclick="copyHtml()">
+        <span class="btn-icon">&#128203;</span> Copier le code
+      </button>
+      <button class="btn btn-purple" onclick="printWords()">
+        <span class="btn-icon">&#128424;</span> Imprimer les mots
+      </button>
+    </div>
+  </div>
+
+  <!-- PANEL: Apercu -->
+  <div class="panel" id="previewPanel" style="display:none">
+    <div class="panel-title">Apercu du resultat</div>
+    <iframe id="previewFrame" class="preview-frame"></iframe>
+  </div>
+
+</div><!-- /main-container -->
+
+<!-- Print page (hidden on screen, shown on print) -->
+<div class="print-page" id="printPage">
+  <h2>Boite a Mots</h2>
+  <div class="print-grid" id="printGrid"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ======================================================================
+   DATA: Font definitions
+   ====================================================================== */
+
+const FONT_CATEGORIES = {
+  cursive: {
+    label: 'Cursive scolaire',
+    containerId: 'fontsCursive',
+    fonts: [
+      { id: 'cursive-system', name: 'Cursive', css: 'cursive', preview: 'maison' },
+      { id: 'comic-sans', name: 'Comic Sans', css: '"Comic Sans MS", "Comic Sans", cursive', preview: 'maison' },
+      { id: 'georgia', name: 'Georgia', css: 'Georgia, "Times New Roman", serif', preview: 'maison' }
+    ]
+  },
+  script: {
+    label: 'Script',
+    containerId: 'fontsScript',
+    fonts: [
+      { id: 'arial', name: 'Arial', css: 'Arial, Helvetica, sans-serif', preview: 'maison' },
+      { id: 'verdana', name: 'Verdana', css: 'Verdana, Geneva, sans-serif', preview: 'maison' },
+      { id: 'trebuchet', name: 'Trebuchet', css: '"Trebuchet MS", sans-serif', preview: 'maison' }
+    ]
+  },
+  caps: {
+    label: 'Imprimerie / Capitales',
+    containerId: 'fontsCaps',
+    fonts: [
+      { id: 'impact-caps', name: 'Impact', css: 'Impact, "Arial Black", sans-serif', preview: 'MAISON', transform: 'uppercase' },
+      { id: 'system-bold-caps', name: 'Capitales', css: 'system-ui, sans-serif', preview: 'MAISON', transform: 'uppercase', weight: 'bold' }
+    ]
+  }
+};
+
+let selectedFontIds = ['cursive-system'];
+let customFonts = []; // {id, name, css, dataUrl}
+let generatedHtml = '';
+
+/* ======================================================================
+   INIT: Build font picker UI
+   ====================================================================== */
+
+function initFontPicker() {
+  for (const catKey of Object.keys(FONT_CATEGORIES)) {
+    const cat = FONT_CATEGORIES[catKey];
+    const container = document.getElementById(cat.containerId);
+    for (const f of cat.fonts) {
+      container.appendChild(makeFontOption(f));
+    }
+  }
+  updateFontSelection();
+}
+
+function makeFontOption(f) {
+  const div = document.createElement('div');
+  div.className = 'font-option';
+  div.dataset.fontId = f.id;
+  div.innerHTML = `<div class="font-name">${f.name}</div><div class="font-preview" style="font-family:${f.css};${f.transform ? 'text-transform:'+f.transform+';' : ''}${f.weight ? 'font-weight:'+f.weight+';' : ''}">${f.preview || 'maison'}</div>`;
+  div.onclick = () => {
+    const idx = selectedFontIds.indexOf(f.id);
+    if (idx !== -1) {
+      if (selectedFontIds.length > 1) selectedFontIds.splice(idx, 1);
+    } else {
+      selectedFontIds.push(f.id);
+    }
+    updateFontSelection();
+  };
+  return div;
+}
+
+function updateFontSelection() {
+  document.querySelectorAll('.font-option').forEach(el => {
+    el.classList.toggle('selected', selectedFontIds.indexOf(el.dataset.fontId) !== -1);
+  });
+}
+
+/* ======================================================================
+   CUSTOM FONT UPLOAD
+   ====================================================================== */
+
+const uploadZone = document.getElementById('uploadZone');
+const fontFileInput = document.getElementById('fontFileInput');
+
+uploadZone.addEventListener('click', () => fontFileInput.click());
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('dragover');
+  handleFontFiles(e.dataTransfer.files);
+});
+fontFileInput.addEventListener('change', () => handleFontFiles(fontFileInput.files));
+
+function handleFontFiles(files) {
+  for (const file of files) {
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (!['ttf','otf','woff','woff2'].includes(ext)) {
+      showToast('Format non supporte : .' + ext);
+      continue;
+    }
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const dataUrl = e.target.result;
+      const fontName = file.name.replace(/\.[^.]+$/, '');
+      const fontId = 'custom-' + Date.now() + '-' + Math.random().toString(36).slice(2,6);
+      const fontFace = new FontFace(fontId, `url(${dataUrl})`);
+      fontFace.load().then(loaded => {
+        document.fonts.add(loaded);
+        const fontObj = { id: fontId, name: fontName, css: `"${fontId}"`, preview: 'maison', dataUrl: dataUrl };
+        customFonts.push(fontObj);
+        selectedFontIds.push(fontId);
+        renderCustomFonts();
+        updateFontSelection();
+        showToast('Police ajoutee : ' + fontName);
+      }).catch(() => {
+        showToast('Erreur de chargement : ' + file.name);
+      });
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function renderCustomFonts() {
+  const list = document.getElementById('customFontList');
+  list.innerHTML = '';
+  for (const f of customFonts) {
+    // Tag
+    const tag = document.createElement('span');
+    tag.className = 'custom-font-tag';
+    tag.innerHTML = `<span style="font-family:${f.css}">${f.name}</span><button onclick="removeCustomFont('${f.id}')">&times;</button>`;
+    list.appendChild(tag);
+    // Also add to font grid
+    const grid = document.getElementById('fontsCursive').parentElement;
+    // Already in grid? check
+  }
+  // Rebuild custom section in font picker
+  let customContainer = document.getElementById('fontsCustom');
+  if (!customContainer) {
+    const catDiv = document.createElement('div');
+    catDiv.className = 'font-category';
+    catDiv.id = 'fontsCategoryCustom';
+    catDiv.innerHTML = '<div class="font-category-title">Polices importees</div><div class="font-grid" id="fontsCustom"></div>';
+    document.getElementById('uploadZone').parentElement.insertBefore(catDiv, document.getElementById('uploadZone'));
+    customContainer = document.getElementById('fontsCustom');
+  }
+  customContainer.innerHTML = '';
+  for (const f of customFonts) {
+    customContainer.appendChild(makeFontOption(f));
+  }
+  updateFontSelection();
+}
+
+function removeCustomFont(id) {
+  customFonts = customFonts.filter(f => f.id !== id);
+  selectedFontIds = selectedFontIds.filter(fid => fid !== id);
+  if (selectedFontIds.length === 0) selectedFontIds = ['cursive-system'];
+  renderCustomFonts();
+  updateFontSelection();
+}
+
+/* ======================================================================
+   WORD INPUT
+   ====================================================================== */
+
+const wordInput = document.getElementById('wordInput');
+const wordCountEl = document.getElementById('wordCount');
+const quantityInput = document.getElementById('quantityInput');
+
+wordInput.addEventListener('input', () => {
+  const words = getWords();
+  wordCountEl.textContent = words.length;
+  updateQuantityInfo();
+  // Auto-set default quantity
+  if (words.length > 0 && words.length < 10) {
+    quantityInput.value = words.length;
+  } else if (words.length >= 10) {
+    quantityInput.value = 10;
+  }
+});
+
+quantityInput.addEventListener('input', updateQuantityInfo);
+
+function getWords() {
+  return wordInput.value.split('\n').map(w => w.trim()).filter(w => w.length > 0);
+}
+
+function updateQuantityInfo() {
+  const words = getWords();
+  const qty = parseInt(quantityInput.value) || 0;
+  const info = document.getElementById('quantityInfo');
+  if (words.length === 0) {
+    info.textContent = '';
+    info.className = 'quantity-info';
+  } else if (qty > words.length) {
+    const repeats = Math.ceil(qty / words.length);
+    info.textContent = `${words.length} mot(s) disponible(s) — chaque mot sera repete ~${repeats} fois pour atteindre ${qty}.`;
+    info.className = 'quantity-info warn';
+  } else {
+    info.textContent = `${qty} mot(s) sur ${words.length} disponible(s) seront affiches (selection aleatoire).`;
+    info.className = 'quantity-info';
+  }
+}
+
+/* ======================================================================
+   GET SELECTED FONT INFO
+   ====================================================================== */
+
+function getAllAvailableFonts() {
+  const all = [];
+  for (const catKey of Object.keys(FONT_CATEGORIES)) {
+    for (const f of FONT_CATEGORIES[catKey].fonts) all.push(f);
+  }
+  for (const f of customFonts) all.push(f);
+  return all;
+}
+
+function getSelectedFonts() {
+  const all = getAllAvailableFonts();
+  const selected = selectedFontIds.map(id => all.find(f => f.id === id)).filter(Boolean);
+  return selected.length > 0 ? selected : [FONT_CATEGORIES.cursive.fonts[0]];
+}
+
+// Backward compat
+function getSelectedFont() { return getSelectedFonts()[0]; }
+
+/* ======================================================================
+   BUILD WORD LIST (with repetition)
+   ====================================================================== */
+
+function buildWordList() {
+  const words = getWords();
+  const qty = parseInt(quantityInput.value) || 10;
+  if (words.length === 0) return [];
+  const result = [];
+  while (result.length < qty) {
+    // shuffle copy
+    const shuffled = [...words].sort(() => Math.random() - 0.5);
+    for (const w of shuffled) {
+      if (result.length >= qty) break;
+      result.push(w);
+    }
+  }
+  return result;
+}
+
+/* ======================================================================
+   BUILD PLAYER HTML — Full standalone offline player
+   ====================================================================== */
+
+function buildPlayerHtml() {
+  const fonts = getSelectedFonts();
+  const wordList = buildWordList();
+  if (wordList.length === 0) return null;
+
+  // Build @font-face for custom fonts
+  const fontFaceCSS = fonts
+    .filter(f => f.id.startsWith('custom-') && f.dataUrl)
+    .map(f => `@font-face { font-family: "${f.id}"; src: url(${f.dataUrl}); }`)
+    .join('\n');
+
+  // Build word+font pairs: each word gets a font in rotation
+  const wordFontPairs = wordList.map((w, i) => {
+    const f = fonts[i % fonts.length];
+    return { text: w, fontCss: f.css, transform: f.transform || 'none', weight: f.weight || 'normal', fontName: f.name };
+  });
+  const pairsJson = JSON.stringify(wordFontPairs);
+
+  // Use first font as default display
+  const fontFamily = fonts[0].css;
+  const textTransform = fonts[0].transform || 'none';
+  const fontWeight = fonts[0].weight || 'normal';
+
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Boite a Mots</title>
+<style>
+${fontFaceCSS}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: system-ui, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #f0f4ff;
+  padding: 20px;
+  user-select: none;
+}
+.word-display {
+  font-family: ${fontFamily};
+  font-size: clamp(3rem, 12vw, 8rem);
+  text-transform: ${textTransform};
+  font-weight: ${fontWeight};
+  color: #1e293b;
+  text-align: center;
+  padding: 40px 30px;
+  transition: opacity 0.3s;
+  line-height: 1.3;
+  max-width: 90vw;
+  word-break: break-word;
+}
+.controls {
+  display: flex;
+  gap: 14px;
+  margin-top: 30px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.controls button {
+  padding: 14px 28px;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: white;
+  transition: all 0.2s;
+  min-height: 50px;
+}
+.controls button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+.btn-prev { background: #64748b; }
+.btn-next { background: #2563eb; }
+.btn-shuffle { background: #7c3aed; }
+.counter {
+  margin-top: 16px;
+  font-size: 1rem;
+  color: #64748b;
+}
+</style>
+</head>
+<body>
+<div class="word-display" id="wordDisplay"></div>
+<div class="controls">
+  <button class="btn-prev" onclick="prev()">&#9664; Precedent</button>
+  <button class="btn-shuffle" onclick="shuffle()">&#128256; Melanger</button>
+  <button class="btn-next" onclick="next()">Suivant &#9654;</button>
+</div>
+<div class="counter" id="counter"></div>
+<script>
+let pairs = ${pairsJson};
+let idx = 0;
+const display = document.getElementById('wordDisplay');
+const counter = document.getElementById('counter');
+function show() {
+  const p = pairs[idx];
+  display.textContent = p.text;
+  display.style.fontFamily = p.fontCss;
+  display.style.textTransform = p.transform;
+  display.style.fontWeight = p.weight;
+  counter.textContent = (idx+1) + ' / ' + pairs.length + '  (' + p.fontName + ')';
+}
+function next() { idx = (idx + 1) % pairs.length; show(); }
+function prev() { idx = (idx - 1 + pairs.length) % pairs.length; show(); }
+function shuffle() {
+  for (let i = pairs.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pairs[i], pairs[j]] = [pairs[j], pairs[i]];
+  }
+  idx = 0; show();
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') next();
+  else if (e.key === 'ArrowLeft') prev();
+  else if (e.key === 's' || e.key === 'S') shuffle();
+});
+show();
+<\/script>
+</body>
+</html>`;
+}
+
+/* ======================================================================
+   ACTIONS
+   ====================================================================== */
+
+function generatePreview() {
+  const html = buildPlayerHtml();
+  if (!html) { showToast('Entrez au moins un mot.'); return; }
+  generatedHtml = html;
+  const panel = document.getElementById('previewPanel');
+  panel.style.display = '';
+  const frame = document.getElementById('previewFrame');
+  frame.srcdoc = html;
+  panel.scrollIntoView({ behavior: 'smooth' });
+  showToast('Apercu genere');
+}
+
+function downloadHtml() {
+  const html = buildPlayerHtml();
+  if (!html) { showToast('Entrez au moins un mot.'); return; }
+  generatedHtml = html;
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'boite-a-mots.html';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Fichier telecharge');
+}
+
+function copyHtml() {
+  const html = buildPlayerHtml();
+  if (!html) { showToast('Entrez au moins un mot.'); return; }
+  generatedHtml = html;
+  navigator.clipboard.writeText(html).then(() => {
+    showToast('Code copie dans le presse-papiers');
+  }).catch(() => {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = html;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('Code copie');
+  });
+}
+
+function printWords() {
+  const words = getWords();
+  if (words.length === 0) { showToast('Entrez au moins un mot.'); return; }
+  const fonts = getSelectedFonts();
+  const wordList = buildWordList();
+  const grid = document.getElementById('printGrid');
+  grid.innerHTML = '';
+  wordList.forEach((w, i) => {
+    const font = fonts[i % fonts.length];
+    const div = document.createElement('div');
+    div.className = 'print-word';
+    div.style.fontFamily = font.css;
+    if (font.transform) div.style.textTransform = font.transform;
+    if (font.weight) div.style.fontWeight = font.weight;
+    div.textContent = w;
+    // Add font name tag
+    const tag = document.createElement('div');
+    tag.style.cssText = 'font-size:0.6rem;color:#999;font-family:system-ui;text-transform:none;font-weight:400;margin-top:4px;';
+    tag.textContent = font.name;
+    div.appendChild(tag);
+    grid.appendChild(div);
+  });
+  document.getElementById('printPage').style.display = 'block';
+  setTimeout(() => {
+    window.print();
+    document.getElementById('printPage').style.display = 'none';
+  }, 100);
+}
+
+/* ======================================================================
+   TOAST
+   ====================================================================== */
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+/* ======================================================================
+   INIT
+   ====================================================================== */
+
+initFontPicker();
+updateQuantityInfo();
+
+</script>
+</body>
+</html>

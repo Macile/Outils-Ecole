@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sudoku Pedagogique - Ecole</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Caveat:wght@700&family=Patrick+Hand&display=swap" onerror="">
+<style>
+/* ========== RESET & BASE ========== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --primary: #2563eb;
+  --primary-light: #dbeafe;
+  --success: #16a34a;
+  --warning: #ea580c;
+  --bg: #f0f4ff;
+  --card: #ffffff;
+  --text: #1e293b;
+  --text-light: #64748b;
+  --border: #cbd5e1;
+  --radius: 12px;
+  --shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+/* ========== HEADER ========== */
+.app-header {
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  color: white;
+  padding: 18px 24px;
+  text-align: center;
+  box-shadow: 0 2px 12px rgba(37,99,235,0.3);
+}
+.app-header h1 { font-size: 1.8rem; font-weight: 700; }
+.app-header p { font-size: 0.95rem; opacity: 0.9; margin-top: 4px; }
+
+.main-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ========== PANELS ========== */
+.panel {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+}
+.panel-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--primary-light);
+  color: var(--primary);
+}
+
+/* ========== OPTIONS ========== */
+.options-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.option-group { flex: 1; min-width: 200px; }
+.option-group label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 6px;
+  color: var(--text-light);
+}
+.option-group select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  font-size: 1rem;
+  background: white;
+  cursor: pointer;
+}
+.option-group select:focus { outline: none; border-color: var(--primary); }
+
+/* ========== DIFFICULTY CHECKS ========== */
+.diff-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s;
+}
+.diff-check:has(input:checked) {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--primary);
+  font-weight: 600;
+}
+.diff-check input { accent-color: var(--primary); }
+
+/* ========== FONT CHECKS ========== */
+.font-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s;
+  background: white;
+}
+.font-check:hover { border-color: var(--primary); }
+.font-check.active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+.font-check input { accent-color: var(--primary); }
+.font-check .font-sample {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+.font-check .font-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+/* ========== BUTTONS ========== */
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 22px;
+  border: none;
+  border-radius: 10px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: white;
+  min-height: 48px;
+}
+.btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+.btn:active { transform: translateY(0); }
+.btn-primary { background: var(--primary); }
+.btn-success { background: var(--success); }
+.btn-warning { background: var(--warning); }
+.btn-danger { background: #7c3aed; }
+.btn-dark { background: #334155; }
+.btn-outline {
+  background: white; color: var(--primary); border: 2px solid var(--primary);
+}
+.btn-outline:hover { background: var(--primary-light); }
+.btn-icon { font-size: 1.3rem; line-height: 1; }
+
+/* ========== UPLOAD ========== */
+.upload-zone {
+  margin-top: 10px;
+  padding: 20px 16px;
+  border: 2px dashed var(--border);
+  border-radius: 16px;
+  text-align: center;
+  cursor: pointer;
+  display: none;
+  background: #fdfaf5;
+  transition: all 0.2s;
+}
+.upload-zone.visible { display: block; }
+.upload-zone:hover, .upload-zone.dragover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+.upload-preview {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; justify-content: center;
+}
+.upload-preview img {
+  width: 50px; height: 50px; object-fit: contain;
+  border: 2px solid var(--border); border-radius: 8px; padding: 4px; background: white;
+}
+
+/* ========== SYMBOL PICKER ========== */
+.picker-item {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 1.8rem;
+  background: white;
+  transition: all 0.15s;
+  user-select: none;
+}
+.picker-item:hover { border-color: var(--primary); background: var(--primary-light); }
+.picker-item.selected {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.3);
+}
+.picker-item svg { max-width: 70%; max-height: 70%; }
+
+/* ========== SUDOKU TABLE ========== */
+.grid-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.grid-label {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-light);
+}
+
+.sudoku-table {
+  border-collapse: collapse;
+  border: 4px solid #000;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  empty-cells: show;
+  table-layout: fixed;
+}
+.sudoku-table td {
+  text-align: center;
+  vertical-align: middle;
+  font-size: 2rem;
+  font-weight: 700;
+  border: 1px solid #000;
+  user-select: none;
+}
+/* Block separator borders — 4px black overrides the 2px grey in collapse */
+.sudoku-table td.blk-r { border-right: 4px solid #000; }
+.sudoku-table td.blk-b { border-bottom: 4px solid #000; }
+
+.sudoku-table td.given { color: var(--text); }
+.sudoku-table td.empty { color: transparent; }
+.sudoku-table td.revealed { color: var(--primary); background: #eff6ff; }
+
+.sudoku-table td .cell-content {
+  display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;
+}
+.sudoku-table td .cell-content img,
+.sudoku-table td .cell-content svg {
+  max-width: 70%; max-height: 70%; object-fit: contain;
+}
+.sudoku-table td .cell-content .shape-symbol {
+  font-size: 2.2rem; line-height: 1;
+}
+
+/* ========== GRIDS CONTAINER ========== */
+.grids-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+/* ========== NOTICE ========== */
+.notice-panel {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.notice-panel.visible { display: flex; }
+.notice-content {
+  background: white;
+  border-radius: 16px;
+  padding: 30px;
+  max-width: 700px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.notice-content h2 { color: var(--primary); margin-bottom: 16px; }
+.notice-content h3 { color: var(--text); margin: 14px 0 6px; }
+.notice-content p, .notice-content li { font-size: 0.95rem; margin-bottom: 6px; }
+.notice-content ul { padding-left: 20px; }
+.notice-close {
+  float: right; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-light);
+}
+
+/* ========== FULLSCREEN ========== */
+.fullscreen-active .app-header,
+.fullscreen-active .panel:not(.panel-grid) { display: none; }
+.fullscreen-active .main-container { max-width: 100%; padding: 10px; }
+.fullscreen-active .panel-grid {
+  min-height: 90vh;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+
+/* ========== PRINT ========== */
+@media print {
+  body { background: white !important; }
+  .app-header, .panel-options, .panel-actions, .notice-panel { display: none !important; }
+  .main-container { padding: 5mm; max-width: 100%; margin: 0; }
+  .panel-grid { box-shadow: none; padding: 0; }
+  .grids-container {
+    gap: 6mm;
+    justify-content: center;
+  }
+  .grid-wrapper { page-break-inside: avoid; }
+  .sudoku-table {
+    box-shadow: none !important;
+    border: 3px solid #000 !important;
+  }
+  .sudoku-table td {
+    border: 1px solid #000 !important;
+  }
+  .sudoku-table td.blk-r { border-right: 3px solid #000 !important; }
+  .sudoku-table td.blk-b { border-bottom: 3px solid #000 !important; }
+  .btn-row { display: none !important; }
+  .grid-label { color: black !important; }
+  .sudoku-table td.revealed { color: #555 !important; background: #eee !important; }
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 600px) {
+  .app-header h1 { font-size: 1.3rem; }
+  .btn { padding: 10px 16px; font-size: 0.95rem; }
+}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <h1>Sudoku Pedagogique</h1>
+  <p>Generateur de sudokus pour l'ecole - fonctionne hors ligne</p>
+</header>
+
+<div class="main-container">
+
+  <div class="panel panel-options">
+    <div class="panel-title">Reglages</div>
+    <div class="options-row">
+      <div class="option-group">
+        <label>Taille de la grille</label>
+        <select id="gridSize" onchange="onThemeChange()">
+          <option value="4" selected>4 x 4 (maternelle / CP)</option>
+          <option value="6">6 x 6 (CP / CE1)</option>
+          <option value="9">9 x 9 (primaire)</option>
+        </select>
+      </div>
+      <div class="option-group">
+        <label>Niveau (plusieurs possibles)</label>
+        <div id="difficultyChecks" style="display:flex;flex-wrap:wrap;gap:6px;">
+          <label class="diff-check"><input type="checkbox" value="very-easy" checked> Tres facile</label>
+          <label class="diff-check"><input type="checkbox" value="easy"> Facile</label>
+          <label class="diff-check"><input type="checkbox" value="medium"> Moyen</label>
+          <label class="diff-check"><input type="checkbox" value="hard"> Difficile</label>
+        </div>
+      </div>
+      <div class="option-group">
+        <label>Theme / Symboles</label>
+        <select id="theme" onchange="onThemeChange()">
+          <option value="numbers">Chiffres</option>
+          <option value="letters">Lettres</option>
+          <option value="shapes" selected>Formes geometriques</option>
+          <option value="animals">Animaux</option>
+          <option value="fruits">Fruits et legumes</option>
+          <option value="colors">Couleurs</option>
+          <option value="stars">Etoiles et symboles</option>
+          <option value="vehicles">Vehicules</option>
+          <option value="custom">Images importees</option>
+        </select>
+      </div>
+      <div class="option-group">
+        <label>Style</label>
+        <select id="colorMode">
+          <option value="color" selected>Couleur plein</option>
+          <option value="color-outline">Couleur contour</option>
+          <option value="bw">Noir et blanc plein</option>
+          <option value="bw-outline">Noir et blanc contour</option>
+        </select>
+      </div>
+      <div class="option-group">
+        <label>Nombre de fiches</label>
+        <select id="sheetCount">
+          <option value="1">1 fiche</option>
+          <option value="2">2 fiches</option>
+          <option value="3">3 fiches</option>
+          <option value="4" selected>4 fiches</option>
+          <option value="6">6 fiches</option>
+          <option value="8">8 fiches</option>
+          <option value="9">9 fiches</option>
+        </select>
+      </div>
+    </div>
+    <div id="fontRow" style="display:none">
+      <label style="font-weight:600;font-size:0.9rem;color:var(--text-light);margin-bottom:8px;display:block;">
+        Polices (plusieurs possibles = melange sur les fiches)
+      </label>
+      <div id="fontChecks" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+      <div id="fontPreviews" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;"></div>
+    </div>
+    <!-- Symbol picker -->
+    <div id="symbolPicker" style="display:none">
+      <label style="display:block;font-weight:600;font-size:0.9rem;margin-bottom:6px;color:var(--text-light)">
+        Choisissez vos symboles — <span id="pickerCount">0</span> / <span id="pickerNeeded">4</span> selectionnes
+      </label>
+      <div id="pickerGrid" style="display:flex;flex-wrap:wrap;gap:8px;padding:10px;border:2px solid var(--border);border-radius:10px;background:white;"></div>
+    </div>
+    <div class="upload-zone" id="uploadZone">
+      <div style="font-size:2rem;margin-bottom:6px;">🖼️</div>
+      <p><strong>Ajouter des images personnalisees</strong></p>
+      <p style="font-size:0.85rem;color:var(--text-light);margin-top:4px;">
+        Depose ici des fichiers image ou clique pour parcourir.<br>
+        Il faut autant d'images que la taille de la grille (<span id="uploadNeeded">4</span> images).
+      </p>
+      <input type="file" id="fileInput" multiple accept="image/*" style="display:none">
+      <div class="upload-preview" id="uploadPreview"></div>
+      <div id="uploadStatus" style="display:none;margin-top:8px;font-size:0.85rem;font-weight:600;"></div>
+    </div>
+  </div>
+
+  <div class="panel panel-actions">
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="generate()">
+        <span class="btn-icon">&#9654;</span> Generer
+      </button>
+      <button class="btn btn-success" onclick="showCorrection()">
+        <span class="btn-icon">&#10003;</span> Correction
+      </button>
+      <button class="btn btn-warning" onclick="printPage()">
+        <span class="btn-icon">&#128438;</span> Imprimer
+      </button>
+      <button class="btn btn-danger" onclick="toggleFullscreen()">
+        <span class="btn-icon">&#9974;</span> Plein ecran
+      </button>
+      <button class="btn btn-dark" onclick="toggleNotice()">
+        <span class="btn-icon">&#128214;</span> Notice
+      </button>
+      <button class="btn btn-outline" onclick="generate()">
+        <span class="btn-icon">&#128260;</span> Nouvelle fiche
+      </button>
+    </div>
+  </div>
+
+  <div class="panel panel-grid" id="panelGrid">
+    <div class="grids-container" id="gridsContainer">
+      <p style="color:var(--text-light);text-align:center;padding:40px 0;">
+        Cliquez sur <strong>Generer</strong> pour creer un sudoku.
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<div class="notice-panel" id="noticePanel">
+  <div class="notice-content">
+    <button class="notice-close" onclick="toggleNotice()">&times;</button>
+    <h2>Notice d'utilisation</h2>
+    <h3>Presentation</h3>
+    <p>Ce generateur de sudokus pedagogiques fonctionne <strong>entierement hors ligne</strong>.
+    Il suffit d'ouvrir le fichier <code>index.html</code> dans un navigateur.</p>
+    <h3>Comment utiliser</h3>
+    <ul>
+      <li><strong>Taille :</strong> 4x4 pour les plus jeunes, 6x6 pour CP/CE1, 9x9 pour le primaire.</li>
+      <li><strong>Niveau :</strong> "Tres facile" = beaucoup d'indices, ideal pour debuter.</li>
+      <li><strong>Theme :</strong> chiffres, lettres, formes, animaux, fruits, couleurs, etoiles, vehicules, ou vos images.</li>
+      <li><strong>Fiches :</strong> generez 1 a 6 fiches differentes d'un coup.</li>
+    </ul>
+    <h3>Boutons</h3>
+    <ul>
+      <li><strong>Generer / Nouvelle fiche :</strong> cree de nouvelles grilles.</li>
+      <li><strong>Correction :</strong> affiche/masque les cases manquantes en bleu.</li>
+      <li><strong>Imprimer :</strong> lance l'impression. Les boutons sont masques automatiquement.</li>
+      <li><strong>Plein ecran :</strong> ideal pour le tableau numerique.</li>
+    </ul>
+    <h3>Images importees</h3>
+    <p>Selectionnez "Images importees", puis chargez autant d'images que la taille de la grille.</p>
+    <h3>Impression</h3>
+    <p>Plusieurs grilles tiennent sur une page A4 (surtout en 4x4). Les bordures s'impriment sans
+    avoir besoin de cocher "Imprimer l'arriere-plan".</p>
+    <h3>Conseils pedagogiques</h3>
+    <ul>
+      <li>Commencez par le 4x4 tres facile avec des formes ou des animaux.</li>
+      <li>Laissez les enfants manipuler des jetons avant de passer au papier.</li>
+      <li>Imprimez le corrige a part pour l'autocorrection.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// THEMES
+// ============================================================
+// Full library of available symbols per theme (user picks from these)
+const LIBRARY = {
+  numbers: {
+    items: ['1','2','3','4','5','6','7','8','9'],
+    type: 'text', labels: ['1','2','3','4','5','6','7','8','9']
+  },
+  letters: {
+    items: ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P'],
+    type: 'text', labels: ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P']
+  },
+  shapes: {
+    items: ['shape-circle','shape-square','shape-triangle','shape-star','shape-rectangle','shape-hexagon','shape-diamond','shape-pentagon','shape-cross','shape-oval','shape-arrow','shape-heart'],
+    type: 'svg',
+    colors: ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#e91e63','#00bcd4','#ff9800','#607d8b','#8bc34a','#ff5722','#e91e63'],
+    labels: ['Cercle','Carre','Triangle','Etoile','Rectangle','Hexagone','Losange','Pentagone','Croix','Ovale','Fleche','Coeur']
+  },
+  animals: {
+    items: ['\uD83D\uDC31','\uD83D\uDC36','\uD83D\uDC30','\uD83D\uDC2D','\uD83D\uDC3B','\uD83E\uDD8A','\uD83D\uDC38','\uD83E\uDD89','\uD83E\uDD8B','\uD83D\uDC22','\uD83D\uDC1D','\uD83D\uDC20','\uD83E\uDD81','\uD83D\uDC18','\uD83D\uDC27'],
+    type: 'emoji',
+    labels: ['Chat','Chien','Lapin','Souris','Ours','Renard','Grenouille','Hibou','Papillon','Tortue','Abeille','Poisson','Lion','Elephant','Pingouin']
+  },
+  fruits: {
+    items: ['\uD83C\uDF4E','\uD83C\uDF4A','\uD83C\uDF53','\uD83C\uDF47','\uD83C\uDF4C','\uD83C\uDF52','\uD83C\uDF49','\uD83C\uDF4B','\uD83E\uDD5D','\uD83C\uDF50','\uD83C\uDF51','\uD83E\uDD6D'],
+    type: 'emoji',
+    labels: ['Pomme','Orange','Fraise','Raisin','Banane','Cerise','Pasteque','Citron','Kiwi','Poire','Peche','Mangue']
+  },
+  colors: {
+    items: ['\uD83D\uDD34','\uD83D\uDD35','\uD83D\uDFE2','\uD83D\uDFE1','\uD83D\uDFE0','\uD83D\uDFE3','\u26AB','\u26AA','\uD83D\uDFE4'],
+    type: 'emoji',
+    labels: ['Rouge','Bleu','Vert','Jaune','Orange','Violet','Noir','Blanc','Marron']
+  },
+  stars: {
+    items: ['\u2605','\u2736','\u2739','\u269D','\u2742','\u2756','\u2726','\u2727','\u2738','\u2749','\u2746','\u2741'],
+    type: 'symbol',
+    colors: ['#f1c40f','#e74c3c','#3498db','#2ecc71','#9b59b6','#e91e63','#ff9800','#00bcd4','#795548','#4caf50','#ff5722','#673ab7'],
+    labels: ['Etoile pleine','Etoile 6','Soleil','Lys','Fleur','Losange','Etoile 4','Etoile vide','Etoile 8','Etincelle','Flocon','Tournesol']
+  },
+  vehicles: {
+    items: ['\uD83D\uDE97','\uD83D\uDE8C','\uD83D\uDE82','\u2708\uFE0F','\uD83D\uDEB2','\uD83D\uDE80','\u26F5','\uD83D\uDE92','\uD83D\uDE81','\uD83D\uDE8D','\uD83D\uDEF5','\uD83D\uDE9C'],
+    type: 'emoji',
+    labels: ['Voiture','Bus','Train','Avion','Velo','Fusee','Bateau','Camion pompier','Helicoptere','Trolleybus','Scooter','Tracteur']
+  }
+};
+
+// Selected symbols (indices into LIBRARY items)
+var selectedIndices = [];
+
+// Build THEMES dynamically from selection
+function getActiveSymbols(themeId, size) {
+  if (themeId === 'custom') return customImages.slice(0, size);
+  var lib = LIBRARY[themeId];
+  if (!lib) return [];
+  // Use selected if enough, otherwise use first N
+  if (selectedIndices.length >= size) {
+    return selectedIndices.slice(0, size).map(function(i) { return lib.items[i]; });
+  }
+  return lib.items.slice(0, size);
+}
+
+function isBW() {
+  var v = document.getElementById('colorMode').value;
+  return v === 'bw' || v === 'bw-outline';
+}
+
+function isOutline() {
+  var v = document.getElementById('colorMode').value;
+  return v === 'color-outline' || v === 'bw-outline';
+}
+
+function getActiveColors(themeId, size) {
+  if (isBW()) return null;
+  var lib = LIBRARY[themeId];
+  if (!lib || !lib.colors) return null;
+  if (selectedIndices.length >= size) {
+    return selectedIndices.slice(0, size).map(function(i) { return lib.colors[i] || '#333'; });
+  }
+  return lib.colors.slice(0, size);
+}
+
+// Keep THEMES for type info only
+const THEMES = {
+  numbers: { type: 'text' },
+  letters: { type: 'text' },
+  shapes: { type: 'svg' },
+  animals: { type: 'emoji' },
+  fruits: { type: 'emoji' },
+  colors: { type: 'emoji' },
+  stars: { type: 'symbol' },
+  vehicles: { type: 'emoji' },
+  custom: { type: 'image' }
+};
+
+const BLOCKS = {
+  4: { rows: 2, cols: 2 },
+  6: { rows: 2, cols: 3 },
+  9: { rows: 3, cols: 3 }
+};
+
+const DIFFICULTY_RATIOS = {
+  'very-easy': { 4: 0.75, 6: 0.65, 9: 0.55 },
+  'easy':      { 4: 0.63, 6: 0.55, 9: 0.45 },
+  'medium':    { 4: 0.50, 6: 0.45, 9: 0.36 },
+  'hard':      { 4: 0.38, 6: 0.35, 9: 0.28 }
+};
+
+// Cell sizes: screen vs print (in px for screen, mm concept for print)
+const CELL_SIZES = {
+  screen: { 4: 80, 6: 68, 9: 52 },
+  print:  { 4: 50, 6: 42, 9: 34 }
+};
+
+let customImages = [];
+let currentGrids = [];
+let correctionVisible = false;
+let printMode = false;
+
+// ============================================================
+// SUDOKU GENERATOR
+// ============================================================
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function isValid(grid, row, col, num, size) {
+  const block = BLOCKS[size];
+  for (let i = 0; i < size; i++) {
+    if (grid[row][i] === num || grid[i][col] === num) return false;
+  }
+  const br = Math.floor(row / block.rows) * block.rows;
+  const bc = Math.floor(col / block.cols) * block.cols;
+  for (let r = br; r < br + block.rows; r++)
+    for (let c = bc; c < bc + block.cols; c++)
+      if (grid[r][c] === num) return false;
+  return true;
+}
+
+function solveSudoku(grid, size) {
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      if (grid[r][c] === 0) {
+        const nums = shuffle([...Array(size)].map((_, i) => i + 1));
+        for (const n of nums) {
+          if (isValid(grid, r, c, n, size)) {
+            grid[r][c] = n;
+            if (solveSudoku(grid, size)) return true;
+            grid[r][c] = 0;
+          }
+        }
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+function generateSolution(size) {
+  const grid = Array.from({ length: size }, () => Array(size).fill(0));
+  solveSudoku(grid, size);
+  return grid;
+}
+
+function countSolutions(grid, size, limit) {
+  let count = 0;
+  function solve(g) {
+    if (count >= limit) return;
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        if (g[r][c] === 0) {
+          for (let n = 1; n <= size; n++) {
+            if (isValid(g, r, c, n, size)) {
+              g[r][c] = n;
+              solve(g);
+              g[r][c] = 0;
+            }
+          }
+          return;
+        }
+      }
+    }
+    count++;
+  }
+  solve(grid);
+  return count;
+}
+
+function generatePuzzle(solution, size, difficulty) {
+  const total = size * size;
+  const ratio = DIFFICULTY_RATIOS[difficulty][size];
+  const givens = Math.round(total * ratio);
+  const toRemove = total - givens;
+  const puzzle = solution.map(r => [...r]);
+  const cells = shuffle([...Array(total)].map((_, i) => [Math.floor(i / size), i % size]));
+  let removed = 0;
+  for (const [r, c] of cells) {
+    if (removed >= toRemove) break;
+    const backup = puzzle[r][c];
+    puzzle[r][c] = 0;
+    if (size <= 6) {
+      const test = puzzle.map(row => [...row]);
+      if (countSolutions(test, size, 2) !== 1) { puzzle[r][c] = backup; continue; }
+    }
+    removed++;
+  }
+  return puzzle;
+}
+
+// ============================================================
+// RENDERING
+// ============================================================
+// SVG shape generator
+function hexPoints(center, radius) {
+  var pts = [];
+  for (var i = 0; i < 6; i++) {
+    var angle = Math.PI / 3 * i - Math.PI / 6;
+    pts.push((center + radius * Math.cos(angle)).toFixed(1) + ',' + (center + radius * Math.sin(angle)).toFixed(1));
+  }
+  return pts.join(' ');
+}
+
+function makeSVGShape(shapeId, color, svgSize, outline) {
+  var s = svgSize || 40;
+  var h = s / 2;
+  var sw = Math.max(2, s * 0.06);
+  var f = outline ? 'fill="none" stroke="'+color+'" stroke-width="'+sw+'"' : 'fill="'+color+'"';
+  var shapes = {
+    'shape-circle': '<circle cx="'+h+'" cy="'+h+'" r="'+(h*0.75)+'" '+f+'/>',
+    'shape-square': '<rect x="'+(s*0.15)+'" y="'+(s*0.15)+'" width="'+(s*0.7)+'" height="'+(s*0.7)+'" '+f+' transform="rotate(45 '+h+' '+h+')"/>',
+    'shape-triangle': '<polygon points="'+h+','+(s*0.1)+' '+(s*0.9)+','+(s*0.87)+' '+(s*0.1)+','+(s*0.87)+'" '+f+'/>',
+    'shape-star': '<polygon points="'+h+','+(s*0.05)+' '+(s*0.62)+','+(s*0.38)+' '+(s*0.95)+','+(s*0.38)+' '+(s*0.68)+','+(s*0.6)+' '+(s*0.79)+','+(s*0.95)+' '+h+','+(s*0.72)+' '+(s*0.21)+','+(s*0.95)+' '+(s*0.32)+','+(s*0.6)+' '+(s*0.05)+','+(s*0.38)+' '+(s*0.38)+','+(s*0.38)+'" '+f+'/>',
+    'shape-rectangle': '<rect x="'+(s*0.1)+'" y="'+(s*0.22)+'" width="'+(s*0.8)+'" height="'+(s*0.56)+'" '+f+' rx="2" transform="rotate(45 '+h+' '+h+')"/>',
+    'shape-hexagon': '<polygon points="'+hexPoints(h, h*0.82)+'" '+f+'/>',
+    'shape-diamond': '<polygon points="'+h+','+(s*0.07)+' '+(s*0.7)+','+h+' '+h+','+(s*0.93)+' '+(s*0.3)+','+h+'" '+f+'/>',
+    'shape-pentagon': '<polygon points="'+h+','+(s*0.07)+' '+(s*0.93)+','+(s*0.4)+' '+(s*0.77)+','+(s*0.93)+' '+(s*0.23)+','+(s*0.93)+' '+(s*0.07)+','+(s*0.4)+'" '+f+'/>',
+    'shape-cross': '<polygon points="'+(s*0.35)+','+(s*0.08)+' '+(s*0.65)+','+(s*0.08)+' '+(s*0.65)+','+(s*0.35)+' '+(s*0.92)+','+(s*0.35)+' '+(s*0.92)+','+(s*0.65)+' '+(s*0.65)+','+(s*0.65)+' '+(s*0.65)+','+(s*0.92)+' '+(s*0.35)+','+(s*0.92)+' '+(s*0.35)+','+(s*0.65)+' '+(s*0.08)+','+(s*0.65)+' '+(s*0.08)+','+(s*0.35)+' '+(s*0.35)+','+(s*0.35)+'" '+f+' transform="rotate(45 '+h+' '+h+')"/>',
+    'shape-oval': '<ellipse cx="'+h+'" cy="'+h+'" rx="'+(s*0.4)+'" ry="'+(s*0.25)+'" '+f+' transform="rotate(45 '+h+' '+h+')"/>',
+    'shape-arrow': '<polygon points="'+h+','+(s*0.07)+' '+(s*0.83)+','+(s*0.48)+' '+(s*0.6)+','+(s*0.48)+' '+(s*0.6)+','+(s*0.9)+' '+(s*0.4)+','+(s*0.9)+' '+(s*0.4)+','+(s*0.48)+' '+(s*0.17)+','+(s*0.48)+'" '+f+'/>',
+    'shape-heart': '<path d="M'+h+' '+(s*0.83)+' C'+(s*0.07)+' '+(s*0.55)+' '+(s*0.07)+' '+(s*0.2)+' '+h+' '+(s*0.37)+' C'+(s*0.93)+' '+(s*0.2)+' '+(s*0.93)+' '+(s*0.55)+' '+h+' '+(s*0.83)+'Z" '+f+'/>'
+  };
+  return '<svg viewBox="0 0 '+s+' '+s+'" width="'+s+'" height="'+s+'" xmlns="http://www.w3.org/2000/svg">' + (shapes[shapeId] || '') + '</svg>';
+}
+
+function getCellContent(value, themeId, size) {
+  if (value === 0) return '';
+  const idx = value - 1;
+  const type = THEMES[themeId].type;
+  const symbols = getActiveSymbols(themeId, size);
+  const colors = getActiveColors(themeId, size);
+
+  if (type === 'image') {
+    return '<div class="cell-content"><img src="' + symbols[idx] + '" alt="img"></div>';
+  }
+  if (type === 'svg') {
+    const color = colors ? colors[idx] : '#333';
+    return '<div class="cell-content">' + makeSVGShape(symbols[idx], color, 40, isOutline()) + '</div>';
+  }
+  if (type === 'symbol') {
+    const color = colors ? colors[idx] : 'inherit';
+    return '<div class="cell-content"><span class="shape-symbol" style="color:' + color + '">' + symbols[idx] + '</span></div>';
+  }
+  if (type === 'emoji') {
+    var bwStyle = isBW() ? ' style="filter:grayscale(1) contrast(1.5)"' : '';
+    return '<div class="cell-content"><span class="shape-symbol"' + bwStyle + '>' + symbols[idx] + '</span></div>';
+  }
+  return symbols[idx];
+}
+
+function renderGrid(solution, puzzle, size, themeId, label, cellPx, sheetIndex) {
+  const block = BLOCKS[size];
+  const wrapper = document.createElement('div');
+  wrapper.className = 'grid-wrapper';
+
+  if (label) {
+    const lbl = document.createElement('div');
+    lbl.className = 'grid-label';
+    lbl.textContent = label;
+    wrapper.appendChild(lbl);
+  }
+
+  const table = document.createElement('table');
+  table.className = 'sudoku-table';
+  table.style.fontFamily = getFontForIndex(sheetIndex || 0);
+
+  for (let r = 0; r < size; r++) {
+    const tr = document.createElement('tr');
+    for (let c = 0; c < size; c++) {
+      const td = document.createElement('td');
+      td.style.width = cellPx + 'px';
+      td.style.height = cellPx + 'px';
+      td.style.fontSize = (cellPx * 0.45) + 'px';
+
+      const isGiven = puzzle[r][c] !== 0;
+      td.className = isGiven ? 'given' : 'empty';
+      td.dataset.row = r;
+      td.dataset.col = c;
+      td.dataset.value = solution[r][c];
+
+      if (isGiven) {
+        td.innerHTML = getCellContent(puzzle[r][c], themeId, size);
+      } else {
+        td.innerHTML = '&nbsp;';
+      }
+
+      // Block borders: right edge of block (not last column)
+      if ((c + 1) % block.cols === 0 && c < size - 1) td.classList.add('blk-r');
+      // Block borders: bottom edge of block (not last row)
+      if ((r + 1) % block.rows === 0 && r < size - 1) td.classList.add('blk-b');
+
+      tr.appendChild(td);
+    }
+    table.appendChild(tr);
+  }
+
+  wrapper.appendChild(table);
+  return wrapper;
+}
+
+// ============================================================
+// ACTIONS
+// ============================================================
+var DIFF_LABELS = {
+  'very-easy': 'Tres facile',
+  'easy': 'Facile',
+  'medium': 'Moyen',
+  'hard': 'Difficile'
+};
+
+function getSelectedDifficulties() {
+  var checks = document.querySelectorAll('#difficultyChecks input:checked');
+  var diffs = [];
+  checks.forEach(function(cb) { diffs.push(cb.value); });
+  return diffs;
+}
+
+function generate() {
+  const size = parseInt(document.getElementById('gridSize').value);
+  const diffs = getSelectedDifficulties();
+  const themeId = document.getElementById('theme').value;
+  const count = parseInt(document.getElementById('sheetCount').value);
+
+  if (diffs.length === 0) {
+    alert('Cochez au moins un niveau de difficulte.');
+    return;
+  }
+  if (themeId === 'custom' && customImages.length < size) {
+    alert('Il faut au moins ' + size + ' images pour une grille ' + size + 'x' + size + '.\nVous en avez charge ' + customImages.length + '.');
+    return;
+  }
+  if (themeId !== 'custom' && selectedIndices.length < size) {
+    alert('Selectionnez au moins ' + size + ' symboles dans le panneau de choix.');
+    return;
+  }
+
+  correctionVisible = false;
+  currentGrids = [];
+  const container = document.getElementById('gridsContainer');
+  container.innerHTML = '';
+
+  const cellPx = CELL_SIZES.screen[size];
+
+  for (let i = 0; i < count; i++) {
+    const diff = diffs[i % diffs.length];
+    const solution = generateSolution(size);
+    const puzzle = generatePuzzle(solution, size, diff);
+    currentGrids.push({ solution, puzzle, size, themeId, difficulty: diff });
+    var label = 'Fiche ' + (i + 1);
+    if (diffs.length > 1) label += ' — ' + DIFF_LABELS[diff];
+    if (activeFontIds.length > 1) {
+      var fontId = activeFontIds[i % activeFontIds.length];
+      var fontObj = FONT_LIST.find(function(f) { return f.id === fontId; });
+      if (fontObj) label += ' — ' + fontObj.name;
+    }
+    container.appendChild(renderGrid(solution, puzzle, size, themeId, label, cellPx, i));
+  }
+}
+
+function showCorrection() {
+  correctionVisible = !correctionVisible;
+  if (correctionVisible) {
+    document.querySelectorAll('.sudoku-table td.empty').forEach(function(td) {
+      const val = parseInt(td.dataset.value);
+      const gridIdx = findGridIndex(td);
+      const g = currentGrids[gridIdx];
+      td.innerHTML = getCellContent(val, g.themeId, g.size);
+      td.classList.add('revealed');
+      td.classList.remove('empty');
+    });
+  } else {
+    document.querySelectorAll('.sudoku-table td.revealed').forEach(function(td) {
+      td.innerHTML = '&nbsp;';
+      td.classList.remove('revealed');
+      td.classList.add('empty');
+    });
+  }
+}
+
+function findGridIndex(td) {
+  const table = td.closest('.sudoku-table');
+  const tables = document.querySelectorAll('.sudoku-table');
+  for (let i = 0; i < tables.length; i++) {
+    if (tables[i] === table) return i;
+  }
+  return 0;
+}
+
+function printPage() {
+  // Re-render with smaller cells for print
+  if (currentGrids.length === 0) { window.print(); return; }
+
+  const container = document.getElementById('gridsContainer');
+  const backup = container.innerHTML;
+  container.innerHTML = '';
+
+  const size = currentGrids[0].size;
+  const cellPx = CELL_SIZES.print[size];
+
+  currentGrids.forEach(function(g, i) {
+    const label = currentGrids.length > 1 ? 'Fiche ' + (i + 1) : '';
+    const p = correctionVisible ? g.solution.map(function(r){return r.slice();}) : g.puzzle;
+    container.appendChild(renderGrid(g.solution, p, g.size, g.themeId, label, cellPx, i));
+  });
+
+  // If correction was visible, show it on the print version too
+  if (correctionVisible) {
+    document.querySelectorAll('.sudoku-table td.empty').forEach(function(td) {
+      const val = parseInt(td.dataset.value);
+      const gridIdx = findGridIndex(td);
+      const gg = currentGrids[gridIdx];
+      td.innerHTML = getCellContent(val, gg.themeId, gg.size);
+      td.classList.add('revealed');
+      td.classList.remove('empty');
+    });
+  }
+
+  window.print();
+
+  // Restore screen version
+  container.innerHTML = '';
+  const screenCellPx = CELL_SIZES.screen[size];
+  currentGrids.forEach(function(g, i) {
+    const label = currentGrids.length > 1 ? 'Fiche ' + (i + 1) : '';
+    container.appendChild(renderGrid(g.solution, g.puzzle, g.size, g.themeId, label, screenCellPx, i));
+  });
+  if (correctionVisible) {
+    document.querySelectorAll('.sudoku-table td.empty').forEach(function(td) {
+      const val = parseInt(td.dataset.value);
+      const gridIdx = findGridIndex(td);
+      const gg = currentGrids[gridIdx];
+      td.innerHTML = getCellContent(val, gg.themeId, gg.size);
+      td.classList.add('revealed');
+      td.classList.remove('empty');
+    });
+  }
+}
+
+function toggleFullscreen() {
+  document.body.classList.toggle('fullscreen-active');
+  if (document.body.classList.contains('fullscreen-active')) {
+    if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(function(){});
+  } else {
+    if (document.exitFullscreen) document.exitFullscreen().catch(function(){});
+  }
+}
+
+function toggleNotice() {
+  document.getElementById('noticePanel').classList.toggle('visible');
+}
+
+// ============================================================
+// IMAGE UPLOAD
+// ============================================================
+// ============================================================
+// FONT SELECTION
+// ============================================================
+var FONT_LIST = [
+  { id: 'default', name: 'Standard', family: "'Segoe UI', system-ui, sans-serif" },
+  { id: 'cursive-system', name: 'Cursive', family: "cursive" },
+  { id: 'dancing', name: 'Dancing Script', family: "'Dancing Script', cursive" },
+  { id: 'caveat', name: 'Caveat', family: "'Caveat', cursive" },
+  { id: 'patrick', name: 'Patrick Hand', family: "'Patrick Hand', cursive" },
+  { id: 'comic', name: 'Comic Sans', family: "'Comic Sans MS', 'Comic Sans', cursive" },
+  { id: 'serif', name: 'Serif', family: "Georgia, 'Times New Roman', serif" }
+];
+
+var activeFontIds = ['default'];
+
+function buildFontChecks() {
+  var container = document.getElementById('fontChecks');
+  container.innerHTML = '';
+  var themeId = document.getElementById('theme').value;
+  var sample = (themeId === 'letters') ? 'Abc' : '123';
+
+  FONT_LIST.forEach(function(font) {
+    var label = document.createElement('label');
+    label.className = 'font-check';
+    if (activeFontIds.indexOf(font.id) !== -1) label.classList.add('active');
+
+    var cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.value = font.id;
+    cb.checked = activeFontIds.indexOf(font.id) !== -1;
+    cb.addEventListener('change', function() {
+      if (cb.checked) {
+        if (activeFontIds.indexOf(font.id) === -1) activeFontIds.push(font.id);
+      } else {
+        if (activeFontIds.length > 1) {
+          activeFontIds = activeFontIds.filter(function(id) { return id !== font.id; });
+        } else {
+          cb.checked = true; // keep at least one
+        }
+      }
+      buildFontChecks();
+    });
+
+    var sampleSpan = document.createElement('span');
+    sampleSpan.className = 'font-sample';
+    sampleSpan.style.fontFamily = font.family;
+    sampleSpan.textContent = sample;
+
+    var nameSpan = document.createElement('span');
+    nameSpan.className = 'font-name';
+    nameSpan.textContent = font.name;
+
+    label.appendChild(cb);
+    label.appendChild(sampleSpan);
+    label.appendChild(nameSpan);
+    container.appendChild(label);
+  });
+
+  // Show previews of selected fonts
+  var previews = document.getElementById('fontPreviews');
+  previews.innerHTML = '';
+  activeFontIds.forEach(function(id) {
+    var font = FONT_LIST.find(function(f) { return f.id === id; });
+    if (!font) return;
+    var div = document.createElement('div');
+    div.style.cssText = 'font-size:1.6rem;padding:6px 14px;border:2px solid var(--primary);border-radius:8px;background:var(--primary-light);font-family:' + font.family;
+    div.textContent = (themeId === 'letters') ? 'A B C D' : '1 2 3 4';
+    div.title = font.name;
+    previews.appendChild(div);
+  });
+}
+
+function getSelectedFont() {
+  // For single-grid rendering, return the first active font
+  var font = FONT_LIST.find(function(f) { return f.id === activeFontIds[0]; });
+  return font ? font.family : "'Segoe UI', system-ui, sans-serif";
+}
+
+function getFontForIndex(index) {
+  var id = activeFontIds[index % activeFontIds.length];
+  var font = FONT_LIST.find(function(f) { return f.id === id; });
+  return font ? font.family : "'Segoe UI', system-ui, sans-serif";
+}
+
+function updateFontPreview() {
+  buildFontChecks();
+}
+
+function onThemeChange() {
+  var themeId = document.getElementById('theme').value;
+  document.getElementById('uploadZone').classList.toggle('visible', themeId === 'custom');
+  // Show font selector for text-based themes
+  var showFont = (themeId === 'letters' || themeId === 'numbers');
+  document.getElementById('fontRow').style.display = showFont ? 'flex' : 'none';
+  if (showFont) updateFontPreview();
+  // Update upload status when size changes
+  updateUploadStatus();
+  // Show symbol picker for non-custom themes
+  buildPicker(themeId);
+}
+
+// ============================================================
+// SYMBOL PICKER
+// ============================================================
+function buildPicker(themeId) {
+  var picker = document.getElementById('symbolPicker');
+  var grid = document.getElementById('pickerGrid');
+  var lib = LIBRARY[themeId];
+
+  if (!lib || themeId === 'custom') {
+    picker.style.display = 'none';
+    selectedIndices = [];
+    return;
+  }
+
+  picker.style.display = 'block';
+  grid.innerHTML = '';
+  selectedIndices = [];
+
+  var size = parseInt(document.getElementById('gridSize').value);
+  document.getElementById('pickerNeeded').textContent = size;
+  document.getElementById('pickerCount').textContent = '0';
+
+  // Pre-select first N
+  for (var i = 0; i < Math.min(size, lib.items.length); i++) {
+    selectedIndices.push(i);
+  }
+  document.getElementById('pickerCount').textContent = selectedIndices.length;
+
+  lib.items.forEach(function(item, idx) {
+    var div = document.createElement('div');
+    div.className = 'picker-item';
+    if (selectedIndices.indexOf(idx) !== -1) div.classList.add('selected');
+    div.title = lib.labels ? lib.labels[idx] : '';
+
+    // Render preview
+    if (lib.type === 'svg') {
+      var color = lib.colors ? lib.colors[idx] : '#333';
+      div.innerHTML = makeSVGShape(item, color, 36);
+    } else if (lib.type === 'symbol') {
+      var color2 = lib.colors ? lib.colors[idx] : 'inherit';
+      div.innerHTML = '<span style="color:' + color2 + '">' + item + '</span>';
+    } else if (lib.type === 'emoji') {
+      div.textContent = item;
+    } else {
+      div.textContent = item;
+      div.style.fontWeight = '700';
+    }
+
+    div.addEventListener('click', function() {
+      togglePickerItem(idx, size);
+    });
+
+    grid.appendChild(div);
+  });
+}
+
+function togglePickerItem(idx, size) {
+  var pos = selectedIndices.indexOf(idx);
+  if (pos !== -1) {
+    // Deselect
+    selectedIndices.splice(pos, 1);
+  } else {
+    // Select — if already at max, remove oldest
+    if (selectedIndices.length >= size) {
+      selectedIndices.shift();
+    }
+    selectedIndices.push(idx);
+  }
+  // Update visual
+  var items = document.querySelectorAll('#pickerGrid .picker-item');
+  items.forEach(function(el, i) {
+    el.classList.toggle('selected', selectedIndices.indexOf(i) !== -1);
+  });
+  document.getElementById('pickerCount').textContent = selectedIndices.length;
+}
+
+var uploadZone = document.getElementById('uploadZone');
+var fileInput = document.getElementById('fileInput');
+
+uploadZone.addEventListener('click', function() { fileInput.click(); });
+uploadZone.addEventListener('dragover', function(e) { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', function() { uploadZone.classList.remove('dragover'); });
+uploadZone.addEventListener('drop', function(e) { e.preventDefault(); uploadZone.classList.remove('dragover'); handleFiles(e.dataTransfer.files); });
+fileInput.addEventListener('change', function(e) { handleFiles(e.target.files); });
+
+function handleFiles(files) {
+  customImages = [];
+  var preview = document.getElementById('uploadPreview');
+  preview.innerHTML = '';
+  var size = parseInt(document.getElementById('gridSize').value);
+  var status = document.getElementById('uploadStatus');
+  var count = 0;
+
+  Array.from(files).forEach(function(file) {
+    if (!file.type.startsWith('image/')) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      customImages.push(e.target.result);
+      var img = document.createElement('img');
+      img.src = e.target.result;
+      preview.appendChild(img);
+      count++;
+      updateUploadStatus();
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function updateUploadStatus() {
+  var size = parseInt(document.getElementById('gridSize').value);
+  var status = document.getElementById('uploadStatus');
+  var needed = document.getElementById('uploadNeeded');
+  if (needed) needed.textContent = size;
+  if (!status) return;
+  if (customImages.length === 0) {
+    status.style.display = 'none';
+  } else if (customImages.length < size) {
+    status.style.display = 'block';
+    status.style.color = '#ea580c';
+    status.textContent = customImages.length + ' / ' + size + ' images chargees — il en manque ' + (size - customImages.length);
+  } else {
+    status.style.display = 'block';
+    status.style.color = '#16a34a';
+    status.textContent = customImages.length + ' images chargees — pret !';
+  }
+}
+
+// ============================================================
+// KEYBOARD
+// ============================================================
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    if (document.getElementById('noticePanel').classList.contains('visible')) toggleNotice();
+    if (document.body.classList.contains('fullscreen-active')) document.body.classList.remove('fullscreen-active');
+  }
+});
+
+// Auto-generate on load
+window.addEventListener('DOMContentLoaded', function() {
+  onThemeChange();
+  generate();
+});
+</script>
+
+</body>
+</html>
