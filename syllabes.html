@@ -1,0 +1,2729 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generateur de fiches syllabes - Ecole</title>
+<style>
+/* ========== RESET & BASE ========== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --primary: #2563eb;
+  --primary-light: #dbeafe;
+  --success: #16a34a;
+  --warning: #ea580c;
+  --bg: #f0f4ff;
+  --card: #ffffff;
+  --text: #1e293b;
+  --text-light: #64748b;
+  --border: #cbd5e1;
+  --radius: 12px;
+  --shadow: 0 2px 8px rgba(0,0,0,0.08);
+  --ui-font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --text-scale: 1.06;
+}
+
+body {
+  margin: 0;
+  color: var(--text);
+  background: var(--bg);
+  font-family: var(--ui-font);
+  font-size: calc(16px * var(--text-scale));
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+button, input, textarea, select { font: inherit; }
+
+/* ========== POLICES PEDAGOGIQUES ========== */
+.font-rounded { --ui-font: 'Trebuchet MS', 'Avenir Next', Arial, sans-serif; }
+.font-school { --ui-font: 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', sans-serif; }
+.font-serif { --ui-font: Georgia, 'Times New Roman', serif; }
+
+.size-m { --text-scale: 1; }
+.size-l { --text-scale: 1.08; }
+.size-xl { --text-scale: 1.18; }
+
+/* ========== HEADER ========== */
+.app-header {
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  color: white;
+  padding: 18px 24px;
+  text-align: center;
+  box-shadow: 0 2px 12px rgba(37,99,235,0.3);
+}
+.app-header h1 { font-size: 1.8rem; font-weight: 700; }
+.app-header p { font-size: 0.95rem; opacity: 0.9; margin-top: 4px; }
+
+/* ========== LAYOUT ========== */
+.page-shell {
+  width: min(1280px, calc(100vw - 2rem));
+  margin: 0 auto;
+  padding: 1.2rem 0 3rem;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 390px 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+.workspace {
+  display: grid;
+  gap: 1rem;
+}
+
+/* ========== PANELS ========== */
+.panel {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+}
+
+.panel h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--primary-light);
+  color: var(--primary);
+}
+
+/* ========== EYEBROW ========== */
+.eyebrow {
+  margin: 0 0 0.4rem;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+/* ========== FIELDS ========== */
+.field {
+  display: grid;
+  gap: 0.45rem;
+  margin-bottom: 1rem;
+}
+
+.field span { font-weight: 700; }
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem;
+}
+
+.field input, .field textarea, .field select {
+  width: 100%;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 0.9rem;
+  background: white;
+}
+
+.field input:focus, .field textarea:focus, .field select:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.field textarea { resize: vertical; }
+
+.checkbox-field {
+  align-items: center;
+  grid-template-columns: auto 1fr;
+  gap: 0.6rem;
+}
+
+.checkbox-field input { width: 1.2rem; height: 1.2rem; accent-color: var(--primary); }
+
+/* ========== HELPER TEXT ========== */
+.helper-text, .instruction, .status-line {
+  color: var(--text-light);
+}
+
+.helper-text { margin: 0 0 1rem; }
+
+/* ========== IMPORT / DICTIONARY BOXES ========== */
+.import-box {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--primary-light);
+}
+
+.dictionary-box {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #f8fafc;
+}
+
+.import-head, .csv-preview-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 0.65rem;
+}
+
+.import-head span, .csv-preview-head span {
+  color: var(--text-light);
+  font-size: 0.92rem;
+}
+
+.import-actions {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.import-actions input[type="file"] {
+  flex: 1 1 220px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  background: white;
+}
+
+.csv-preview { margin-top: 0.8rem; }
+
+.csv-preview-list {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.7rem;
+  border-radius: var(--radius);
+  background: #f8fafc;
+  border: 1px dashed var(--border);
+  color: var(--text-light);
+}
+
+.csv-preview-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: start;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.csv-preview-item:hover { background: var(--primary-light); border-radius: 6px; }
+
+.csv-preview-item small { color: var(--text-light); }
+
+/* ========== BUTTONS ========== */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+button {
+  border: none;
+  border-radius: 10px;
+  padding: 12px 22px;
+  cursor: pointer;
+  color: white;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+}
+
+button:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+button:active { transform: translateY(0); }
+
+#generate-btn { background: var(--primary); }
+#generate-btn:hover { background: #1d4ed8; }
+
+#shuffle-btn { background: #334155; }
+#shuffle-btn:hover { background: #1e293b; }
+
+#print-view-btn { background: var(--warning); }
+#print-view-btn:hover { background: #c2410c; }
+
+#print-btn { background: var(--success); }
+#print-btn:hover { background: #15803d; }
+
+#import-csv-btn, #dict-save-btn { background: var(--primary); }
+#dict-delete-btn { background: #ef4444; }
+#dict-export-btn, #dict-import-btn { background: #334155; }
+
+/* ========== INTERACTIVE AREA ========== */
+.panel-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: end;
+  margin-bottom: 1rem;
+}
+
+.interactive-area {
+  display: grid;
+  gap: 1rem;
+}
+
+.activity-card {
+  padding: 1rem;
+  border-radius: var(--radius);
+  background: white;
+  border: 1px solid var(--border);
+}
+
+.activity-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 0.8rem;
+}
+
+.activity-index {
+  display: inline-flex;
+  min-width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--primary-light);
+  color: var(--primary);
+  font-weight: 800;
+}
+
+.feedback { font-weight: 700; }
+.feedback.success { color: var(--success); }
+.feedback.pending { color: var(--text-light); }
+
+.word-hint {
+  margin: 0.35rem 0 0;
+  color: var(--text-light);
+  font-size: 0.92rem;
+}
+
+/* ========== DROP ZONES & TOKENS ========== */
+.drop-zone {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  min-height: 4rem;
+  padding: 0.9rem;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  background: #f8fafc;
+  margin-bottom: 0.8rem;
+}
+
+.drop-zone.is-over, .syllable-bank.is-over {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+.slot {
+  min-width: 5.4rem;
+  min-height: 3rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+}
+
+.slot.filled { border-style: solid; }
+.slot.correct { border-color: var(--success); background: #f0fdf4; }
+
+.syllable-bank {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  min-height: 4rem;
+  padding: 0.5rem 0;
+}
+
+.token {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 4.8rem;
+  min-height: 3rem;
+  padding: 0.45rem 0.8rem;
+  border-radius: var(--radius);
+  border: 2px solid var(--border);
+  background: white;
+  color: var(--text);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  user-select: none;
+  cursor: grab;
+  text-align: center;
+}
+
+.token:focus-visible, button:focus-visible, select:focus-visible,
+textarea:focus-visible, input:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.35);
+  outline-offset: 2px;
+}
+
+.token.selected {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--text);
+}
+
+.token:hover, .token:active { color: var(--text); }
+
+.slot .token { width: 100%; min-width: 0; min-height: 100%; }
+.slot .token, .syllable-bank .token { background: white; color: var(--text); }
+
+/* ========== PRINT SHEETS ========== */
+.sheet {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 0 auto;
+  padding: 14mm;
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.sheet-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+  padding-bottom: 0.8rem;
+  border-bottom: 2px solid var(--text);
+}
+
+.sheet-meta, .answer-method {
+  color: var(--text-light);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.identity-box {
+  display: grid;
+  gap: 0.6rem;
+  min-width: 290px;
+}
+
+.exercise-list {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 1rem;
+}
+
+.sheet-exercise {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.85rem;
+  break-inside: avoid;
+}
+
+.sheet-line-head {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  margin-bottom: 0.65rem;
+}
+
+.sheet-number {
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 999px;
+  background: var(--primary-light);
+  color: var(--primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
+
+.sheet-drop-row, .sheet-label-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.sheet-style-lines .sheet-slot.empty {
+  border-width: 0 0 2.6px 0;
+  border-radius: 0;
+  min-width: 5.2rem;
+  background: transparent;
+}
+
+.sheet-style-cards .sheet-slot.empty {
+  min-width: 5.8rem;
+  min-height: 3.5rem;
+  border-style: dashed;
+  background: #f8fafc;
+}
+
+.sheet-slot, .label-tile {
+  min-width: 4.4rem;
+  min-height: 2.8rem;
+  padding: 0.35rem 0.6rem;
+  border: 1.7px solid var(--text);
+  border-radius: var(--radius);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  background: white;
+  text-align: center;
+}
+
+.sheet-slot.empty {
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.02), rgba(37, 99, 235, 0.06));
+}
+
+.sheet-slot.syllable-hint {
+  background: var(--primary-light);
+}
+
+/* ========== LABEL SHEET ========== */
+.label-sheet-body {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.label-group {
+  break-inside: avoid;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 0.75rem;
+}
+
+.label-group-title {
+  margin: 0 0 0.55rem;
+  font-size: 0.95rem;
+  color: var(--text-light);
+  font-weight: 700;
+}
+
+.label-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  gap: 0.5rem;
+}
+
+.label-tile {
+  min-height: 3.1rem;
+  border-style: dashed;
+}
+
+/* ========== CHALLENGE SHEET ========== */
+.challenge-sheet-body {
+  margin-top: 1rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.challenge-intro { color: var(--text-light); }
+
+.challenge-answer-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.challenge-answer-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.8rem;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.75rem 0.85rem;
+}
+
+.challenge-lines {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.challenge-line {
+  display: inline-flex;
+  min-width: 5.2rem;
+  height: 2.8rem;
+  border-bottom: 2.4px solid var(--text);
+}
+
+.challenge-bank {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  padding: 0.9rem;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  background: #f8fafc;
+}
+
+.challenge-token {
+  min-width: 4.4rem;
+  min-height: 2.8rem;
+  padding: 0.35rem 0.6rem;
+  border: 1.7px solid var(--text);
+  border-radius: var(--radius);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  background: white;
+  text-align: center;
+}
+
+/* ========== ANSWER SHEET ========== */
+.answer-sheet-body {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.answer-row {
+  display: grid;
+  grid-template-columns: auto minmax(120px, 180px) 1fr auto;
+  gap: 0.8rem;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.8rem;
+  break-inside: avoid;
+}
+
+.answer-word { font-size: 1.15em; }
+
+.answer-syllables {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.answer-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 4rem;
+  min-height: 2.4rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--text);
+  background: white;
+  font-weight: 800;
+}
+
+/* ========== PRINT ROOT VISIBILITY ========== */
+.print-root {
+  display: grid;
+  gap: 1rem;
+}
+
+.print-root.view-sheet #label-sheet,
+.print-root.view-sheet #challenge-sheet,
+.print-root.view-labels #student-sheet,
+.print-root.view-labels #challenge-sheet,
+.print-root.view-challenge #student-sheet,
+.print-root.view-challenge #label-sheet,
+.print-root.hide-correction #answer-sheet,
+.print-root.view-labels #answer-sheet {
+  display: none;
+}
+
+.print-root.labels-on-separate-page #label-sheet,
+.print-root.labels-on-separate-page #challenge-sheet,
+.print-root.labels-on-separate-page #answer-sheet {
+  page-break-before: always;
+}
+
+/* ========== TONE COLORS (pedagogiques) ========== */
+.tone-0 { background: #fcf5ec; }
+.tone-1 { background: #f1f7fc; }
+.tone-2 { background: #f5f8ef; }
+.tone-3 { background: #f9f1fb; }
+
+/* ========== CODE ========== */
+code {
+  background: rgba(37, 99, 235, 0.08);
+  border-radius: 6px;
+  padding: 0.08rem 0.3rem;
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 1180px) {
+  .layout, .field-row {
+    grid-template-columns: 1fr;
+  }
+
+  .sheet {
+    width: 100%;
+    min-height: auto;
+  }
+
+  .panel-heading, .sheet-header {
+    flex-direction: column;
+    align-items: start;
+  }
+
+  .answer-row { grid-template-columns: 1fr; }
+  .challenge-answer-list { grid-template-columns: 1fr; }
+}
+
+/* ========== PRINT ========== */
+@page {
+  size: A4 portrait;
+  margin: 10mm;
+}
+
+@page challenge-landscape {
+  size: A4 landscape;
+  margin: 10mm;
+}
+
+@media print {
+  body { background: white; }
+
+  .app-header { display: none !important; }
+
+  .page-shell {
+    width: auto;
+    margin: 0;
+    padding: 0;
+  }
+
+  .no-print, .interactive-panel {
+    display: none !important;
+  }
+
+  .print-root { display: block; }
+
+  .print-root.view-sheet #label-sheet,
+  .print-root.view-sheet #challenge-sheet,
+  .print-root.view-labels #student-sheet,
+  .print-root.view-labels #challenge-sheet,
+  .print-root.view-challenge #student-sheet,
+  .print-root.view-challenge #label-sheet,
+  .print-root.hide-correction #answer-sheet,
+  .print-root.view-labels #answer-sheet {
+    display: none !important;
+  }
+
+  .sheet {
+    width: auto;
+    min-height: auto;
+    box-shadow: none;
+    border: none;
+    margin: 0;
+    padding: 0;
+    page-break-after: always;
+  }
+
+  #challenge-sheet { page: challenge-landscape; }
+
+  #challenge-sheet .challenge-answer-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem 0.7rem;
+  }
+
+  #challenge-sheet .challenge-answer-row {
+    padding: 0.55rem 0.65rem;
+    gap: 0.6rem;
+  }
+
+  #challenge-sheet .challenge-bank {
+    gap: 0.45rem;
+    padding: 0.7rem;
+  }
+
+  #label-sheet { page-break-after: auto; }
+
+  .print-root.labels-on-separate-page #label-sheet,
+  .print-root.labels-on-separate-page #challenge-sheet,
+  .print-root.labels-on-separate-page #answer-sheet {
+    page-break-before: always;
+  }
+
+  .label-group, .sheet-exercise, .challenge-answer-row, .answer-row {
+    break-inside: avoid;
+  }
+}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <h1>Generateur de fiches syllabes</h1>
+  <p>Activite de manipulation syllabique pour la maternelle ou le CP</p>
+</header>
+
+<div class="page-shell">
+  <main class="layout">
+    <section class="panel controls no-print">
+      <h2>Parametres</h2>
+
+      <label class="field">
+        <span>Titre de la fiche</span>
+        <input id="title-input" type="text" value="Je reconstruis les mots" />
+      </label>
+
+      <label class="field">
+        <span>Consigne eleve</span>
+        <textarea id="instruction-input" rows="3">Observe les syllabes, deplace-les puis reconstruis chaque mot.</textarea>
+      </label>
+
+      <section class="import-box">
+        <div class="import-head">
+          <strong>Importer un fichier CSV</strong>
+          <span>Colonnes acceptees: <code>mot</code> et optionnellement <code>decoupage</code>, <code>decoupage_ecrit</code>, <code>decoupage_oral</code>.</span>
+        </div>
+        <div class="import-actions">
+          <input id="csv-file-input" type="file" accept=".csv,text/csv" />
+          <button id="import-csv-btn" type="button">Charger le CSV</button>
+        </div>
+        <p id="csv-import-status" class="helper-text">
+          Aucun fichier CSV charge.
+        </p>
+        <div class="csv-preview">
+          <div class="csv-preview-head">
+            <strong>Apercu des mots importes</strong>
+            <span id="csv-preview-count">0 ligne</span>
+          </div>
+          <div id="csv-preview-list" class="csv-preview-list">
+            Aucun apercu pour le moment.
+          </div>
+        </div>
+      </section>
+
+      <label class="field">
+        <span>Liste de mots</span>
+        <textarea id="words-input" rows="12">PA-PA
+MA-MAN
+LA-PIN
+TO-MA-TE
+BA-NA-NE
+VE-LO
+MAI-SON
+POU-LE
+RA-DIS
+PI-RA-TE</textarea>
+      </label>
+
+      <p class="helper-text">
+        Astuce: vous pouvez forcer le decoupage syllabique en ecrivant les
+        mots avec des tirets, par exemple <code>to-ma-te</code>.
+      </p>
+
+      <label class="field">
+        <span>Mode de syllabes</span>
+        <select id="syllable-mode-select">
+          <option value="written" selected>Syllabes ecrites</option>
+          <option value="oral">Syllabes orales</option>
+        </select>
+      </label>
+
+      <p id="syllable-mode-help" class="helper-text">
+        Mode actuel : syllabes ecrites. Le programme decoupe le mot ecrit,
+        avec quelques exceptions scolaires frequentes.
+      </p>
+
+      <div class="field-row">
+        <label class="field">
+          <span>Police</span>
+          <select id="font-select">
+            <option value="font-rounded">Rounded Sans</option>
+            <option value="font-school">School Print</option>
+            <option value="font-serif">Serif Print</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Taille du texte</span>
+          <select id="text-size-select">
+            <option value="size-m">Moyenne</option>
+            <option value="size-l" selected>Grande</option>
+            <option value="size-xl">Tres grande</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="field-row">
+        <label class="field">
+          <span>Affichage</span>
+          <select id="print-view-select">
+            <option value="both" selected>Fiches + etiquettes</option>
+            <option value="sheet">Fiche eleve seule</option>
+            <option value="challenge">Exercice sans modele</option>
+            <option value="labels">Planche d'etiquettes seule</option>
+          </select>
+        </label>
+
+        <label class="field checkbox-field">
+          <input id="group-colors-toggle" type="checkbox" checked />
+          <span>Distinguer doucement les mots par couleur</span>
+        </label>
+      </div>
+
+      <div class="field-row">
+        <label class="field">
+          <span>Style de fiche</span>
+          <select id="sheet-style-select">
+            <option value="slots" selected>Cases syllabes</option>
+            <option value="lines">Lignes de pose</option>
+            <option value="cards">Grandes cartes</option>
+          </select>
+        </label>
+
+        <label class="field checkbox-field">
+          <input id="show-correction-toggle" type="checkbox" checked />
+          <span>Ajouter un corrige enseignant</span>
+        </label>
+      </div>
+
+      <div class="field-row">
+        <label class="field checkbox-field">
+          <input id="separate-label-page-toggle" type="checkbox" checked />
+          <span>Mettre les etiquettes sur une page separee</span>
+        </label>
+
+        <label class="field checkbox-field">
+          <input id="uppercase-toggle" type="checkbox" checked />
+          <span>Afficher en majuscules</span>
+        </label>
+      </div>
+
+      <div class="actions">
+        <button id="generate-btn" type="button">Generer l'activite</button>
+        <button id="shuffle-btn" type="button">Melanger a nouveau</button>
+        <button id="print-view-btn" type="button">Version imprimable</button>
+        <button id="print-btn" type="button">Imprimer / PDF</button>
+      </div>
+
+      <p class="helper-text">
+        Pour un PDF fiable en classe, utilisez la commande d'impression du
+        navigateur puis "Enregistrer en PDF".
+      </p>
+
+      <section class="dictionary-box">
+        <div class="import-head">
+          <strong>Dictionnaire enseignant</strong>
+          <span>Memorise vos corrections localement dans le navigateur.</span>
+        </div>
+
+        <label class="field">
+          <span>Mot</span>
+          <input id="dict-word-input" type="text" placeholder="Exemple : Louise" />
+        </label>
+
+        <div class="field-row">
+          <label class="field">
+            <span>Decoupage ecrit</span>
+            <input id="dict-written-input" type="text" placeholder="Lou-i-se" />
+          </label>
+
+          <label class="field">
+            <span>Decoupage oral</span>
+            <input id="dict-oral-input" type="text" placeholder="Louise" />
+          </label>
+        </div>
+
+        <div class="actions">
+          <button id="dict-save-btn" type="button">Enregistrer la correction</button>
+          <button id="dict-delete-btn" type="button">Supprimer ce mot</button>
+          <button id="dict-export-btn" type="button">Exporter JSON</button>
+        </div>
+
+        <div class="import-actions">
+          <input id="dict-import-file-input" type="file" accept=".json,application/json" />
+          <button id="dict-import-btn" type="button">Importer JSON</button>
+        </div>
+
+        <p id="dict-status" class="helper-text">
+          Aucune correction enseignant enregistree.
+        </p>
+
+        <div class="csv-preview">
+          <div class="csv-preview-head">
+            <strong>Corrections enregistrees</strong>
+            <span id="dict-count">0 mot</span>
+          </div>
+          <div id="dict-list" class="csv-preview-list">
+            Aucune correction pour le moment.
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section class="workspace">
+      <section class="panel interactive-panel">
+        <div class="panel-heading no-print">
+          <div>
+            <p class="eyebrow">Version interactive</p>
+            <h2 style="border:none;padding:0;margin:0;">Manipulation des syllabes</h2>
+          </div>
+          <p id="status-line" class="status-line">
+            Generez une activite pour commencer.
+          </p>
+        </div>
+        <div id="interactive-area" class="interactive-area"></div>
+      </section>
+
+      <section class="panel interactive-panel">
+        <div class="panel-heading no-print">
+          <div>
+            <p class="eyebrow">TNI Sans Modele</p>
+            <h2 style="border:none;padding:0;margin:0;">Reconstituer les prenoms sans aide</h2>
+          </div>
+          <p class="status-line">
+            Toutes les syllabes sont melangees dans une seule banque.
+          </p>
+        </div>
+        <div id="interactive-challenge-area" class="interactive-area"></div>
+      </section>
+
+      <section id="print-root" class="print-root">
+        <article id="student-sheet" class="sheet printable-card">
+          <header class="sheet-header">
+            <div>
+              <p class="eyebrow">Fiche eleve</p>
+              <h2 id="sheet-title" style="border:none;padding:0;margin:0;">Je reconstruis les mots</h2>
+              <p id="sheet-instruction" class="instruction">
+                Observe les syllabes, deplace-les puis reconstruis chaque mot.
+              </p>
+            </div>
+            <div class="identity-box">
+              <span>Nom : ____________________</span>
+              <span>Prenom : ____________________</span>
+              <span>Date : ____ / ____ / ______</span>
+            </div>
+          </header>
+
+          <div id="student-sheet-body" class="exercise-list"></div>
+        </article>
+
+        <article id="label-sheet" class="sheet printable-card">
+          <header class="sheet-header">
+            <div>
+              <p class="eyebrow">Etiquettes a decouper</p>
+              <h2 style="border:none;padding:0;margin:0;">Planche de syllabes</h2>
+              <p class="instruction">
+                Decoupez les etiquettes puis laissez l'enfant reconstruire les mots.
+              </p>
+            </div>
+          </header>
+
+          <div id="label-sheet-body" class="label-sheet-body"></div>
+        </article>
+
+        <article id="challenge-sheet" class="sheet printable-card">
+          <header class="sheet-header">
+            <div>
+              <p class="eyebrow">Exercice supplementaire</p>
+              <h2 style="border:none;padding:0;margin:0;">Je reconstitue les prenoms sans modele</h2>
+              <p class="instruction">
+                Observe toutes les syllabes melangees puis reconstitue chaque prenom sans aide.
+              </p>
+            </div>
+          </header>
+
+          <div id="challenge-sheet-body" class="challenge-sheet-body"></div>
+        </article>
+
+        <article id="answer-sheet" class="sheet printable-card">
+          <header class="sheet-header">
+            <div>
+              <p class="eyebrow">Corrige enseignant</p>
+              <h2 style="border:none;padding:0;margin:0;">Reponses et decoupage</h2>
+              <p class="instruction">
+                Cette page aide a verifier rapidement les mots et leur
+                decoupage retenu pour la fiche.
+              </p>
+            </div>
+          </header>
+
+          <div id="answer-sheet-body" class="answer-sheet-body"></div>
+        </article>
+      </section>
+    </section>
+  </main>
+</div>
+
+<script>
+const titleInput = document.querySelector("#title-input");
+const instructionInput = document.querySelector("#instruction-input");
+const csvFileInput = document.querySelector("#csv-file-input");
+const importCsvBtn = document.querySelector("#import-csv-btn");
+const csvImportStatus = document.querySelector("#csv-import-status");
+const csvPreviewList = document.querySelector("#csv-preview-list");
+const csvPreviewCount = document.querySelector("#csv-preview-count");
+const dictWordInput = document.querySelector("#dict-word-input");
+const dictWrittenInput = document.querySelector("#dict-written-input");
+const dictOralInput = document.querySelector("#dict-oral-input");
+const dictSaveBtn = document.querySelector("#dict-save-btn");
+const dictDeleteBtn = document.querySelector("#dict-delete-btn");
+const dictExportBtn = document.querySelector("#dict-export-btn");
+const dictImportFileInput = document.querySelector("#dict-import-file-input");
+const dictImportBtn = document.querySelector("#dict-import-btn");
+const dictStatus = document.querySelector("#dict-status");
+const dictCount = document.querySelector("#dict-count");
+const dictList = document.querySelector("#dict-list");
+const wordsInput = document.querySelector("#words-input");
+const syllableModeSelect = document.querySelector("#syllable-mode-select");
+const syllableModeHelp = document.querySelector("#syllable-mode-help");
+const fontSelect = document.querySelector("#font-select");
+const textSizeSelect = document.querySelector("#text-size-select");
+const printViewSelect = document.querySelector("#print-view-select");
+const groupColorsToggle = document.querySelector("#group-colors-toggle");
+const sheetStyleSelect = document.querySelector("#sheet-style-select");
+const showCorrectionToggle = document.querySelector("#show-correction-toggle");
+const separateLabelPageToggle = document.querySelector("#separate-label-page-toggle");
+const uppercaseToggle = document.querySelector("#uppercase-toggle");
+const generateBtn = document.querySelector("#generate-btn");
+const shuffleBtn = document.querySelector("#shuffle-btn");
+const printViewBtn = document.querySelector("#print-view-btn");
+const printBtn = document.querySelector("#print-btn");
+const interactiveArea = document.querySelector("#interactive-area");
+const interactiveChallengeArea = document.querySelector("#interactive-challenge-area");
+const studentSheetBody = document.querySelector("#student-sheet-body");
+const labelSheetBody = document.querySelector("#label-sheet-body");
+const challengeSheetBody = document.querySelector("#challenge-sheet-body");
+const answerSheetBody = document.querySelector("#answer-sheet-body");
+const sheetTitle = document.querySelector("#sheet-title");
+const sheetInstruction = document.querySelector("#sheet-instruction");
+const statusLine = document.querySelector("#status-line");
+const printRoot = document.querySelector("#print-root");
+
+const FONT_CLASSES = ["font-rounded", "font-school", "font-serif"];
+const SIZE_CLASSES = ["size-m", "size-l", "size-xl"];
+const VOWELS = "AEIOUYÀÂÄÉÈÊËÎÏÔÖÙÛÜ";
+const WRITTEN_VOWEL_GROUPS = [
+  "eau",
+  "oeu",
+  "au",
+  "eu",
+  "oi",
+  "ou",
+  "on",
+  "an",
+  "en",
+  "in",
+  "un",
+];
+const NON_SPLIT_CONSONANT_GROUPS = ["ch", "ph", "th", "gn", "qu"];
+const PRONOUNCED_DIAERESIS_ENDINGS = ["ëlle", "aëlle", "oëlle", "uëlle"];
+const WRITTEN_DOUBLE_CONSONANT_ENDINGS = ["anne", "enne", "onne", "amme", "omme", "ette", "elle"];
+const SYLLABLE_EXCEPTIONS = { written: {}, oral: {} };
+const DICTIONARY_STORAGE_KEY = "syllabes-teacher-dictionary-v1";
+const BUILTIN_REFERENCE = {
+  "abygaëlle": { written: ["A", "by", "ga", "ëlle"], oral: ["A", "by", "ga", "ëlle"] },
+  achille: { written: ["A", "chil", "le"], oral: ["A", "chille"] },
+  astrid: { written: ["As", "trid"], oral: ["As", "trid"] },
+  chien: { written: ["chi", "en"], oral: ["chien"] },
+  clarysse: { written: ["Cla", "rys", "se"], oral: ["Clarysse"] },
+  colette: { written: ["Co", "let", "te"], oral: ["Co", "lette"] },
+  fille: { written: ["fil", "le"], oral: ["fille"] },
+  gorgia: { written: ["gor", "gi", "a"], oral: ["gorgia"] },
+  grenouille: { written: ["gre", "nou", "ille"], oral: ["grenouille"] },
+  groupe: { written: ["grou", "pe"], oral: ["groupe"] },
+  hugo: { written: ["Hu", "go"], oral: ["Hu", "go"] },
+  johann: { written: ["Jo", "hann"], oral: ["Jo", "hann"] },
+  jeanne: { written: ["Jean", "ne"], oral: ["Jeanne"] },
+  jenna: { written: ["Jen", "na"], oral: ["Jen", "na"] },
+  juliette: { written: ["Ju", "liet", "te"], oral: ["Ju", "liette"] },
+  lion: { written: ["li", "on"], oral: ["lion"] },
+  louise: { written: ["Lou", "i", "se"], oral: ["Louise"] },
+  "léo": { written: ["Lé", "o"], oral: ["Lé", "o"] },
+  "léon": { written: ["Lé", "on"], oral: ["Lé", "on"] },
+  manolo: { written: ["Ma", "no", "lo"], oral: ["Ma", "no", "lo"] },
+  mouette: { written: ["mou", "et", "te"], oral: ["mouette"] },
+  noa: { written: ["No", "a"], oral: ["No", "a"] },
+  pied: { written: ["pi", "ed"], oral: ["pied"] },
+  "sévann": { written: ["Sé", "vann"], oral: ["Sé", "vann"] },
+  table: { written: ["ta", "ble"], oral: ["table"] },
+  "téa": { written: ["Té", "a"], oral: ["Té", "a"] },
+};
+
+let activityState = [];
+let selectedTokenId = null;
+let challengeState = { bankTokens: [], selectedTokenId: null };
+let importedCsvEntries = [];
+let teacherDictionary = loadTeacherDictionary();
+
+generateBtn.addEventListener("click", () => {
+  generateActivity();
+});
+
+importCsvBtn.addEventListener("click", () => {
+  importCsvFile();
+});
+dictSaveBtn.addEventListener("click", saveDictionaryEntry);
+dictDeleteBtn.addEventListener("click", deleteDictionaryEntry);
+dictExportBtn.addEventListener("click", exportTeacherDictionary);
+dictImportBtn.addEventListener("click", importTeacherDictionary);
+
+shuffleBtn.addEventListener("click", () => {
+  if (activityState.length === 0) {
+    generateActivity();
+    return;
+  }
+
+  reshuffleActivity();
+});
+
+printViewBtn.addEventListener("click", () => {
+  document.querySelector(".print-root").scrollIntoView({
+    behavior: "smooth",
+    block: "start",
+  });
+});
+
+printBtn.addEventListener("click", () => {
+  window.print();
+});
+
+fontSelect.addEventListener("change", applyAppearanceSettings);
+textSizeSelect.addEventListener("change", applyAppearanceSettings);
+printViewSelect.addEventListener("change", applyPrintView);
+groupColorsToggle.addEventListener("change", () => {
+  renderAll();
+});
+syllableModeSelect.addEventListener("change", () => {
+  updateSyllableModeHelp();
+  generateActivity();
+});
+sheetStyleSelect.addEventListener("change", renderAll);
+showCorrectionToggle.addEventListener("change", applyPrintView);
+separateLabelPageToggle.addEventListener("change", applyPrintLayout);
+uppercaseToggle.addEventListener("change", renderAll);
+
+titleInput.addEventListener("input", syncSheetHeader);
+instructionInput.addEventListener("input", syncSheetHeader);
+
+applyAppearanceSettings();
+applyPrintView();
+applyPrintLayout();
+updateSyllableModeHelp();
+renderDictionaryList();
+generateActivity();
+
+function generateActivity() {
+  const words = parseWords(wordsInput.value);
+
+  if (words.length === 0) {
+    statusLine.textContent = "Saisissez au moins un mot valide.";
+    interactiveArea.innerHTML = "";
+    studentSheetBody.innerHTML = "";
+    labelSheetBody.innerHTML = "";
+    return;
+  }
+
+  activityState = words.map((word, index) => createWordActivity(word, index));
+  selectedTokenId = null;
+  resetChallengeState();
+  syncSheetHeader();
+  renderAll();
+}
+
+async function importCsvFile() {
+  const file = csvFileInput.files?.[0];
+
+  if (!file) {
+    csvImportStatus.textContent = "Choisissez d'abord un fichier CSV.";
+    return;
+  }
+
+  const content = await file.text();
+  const delimiter = detectCsvDelimiter(content);
+  const rows = parseCsv(content, delimiter);
+
+  if (rows.length < 2) {
+    csvImportStatus.textContent = "Le fichier CSV semble vide ou incomplet.";
+    renderCsvPreview([]);
+    return;
+  }
+
+  const headers = rows[0].map((cell) => cell.trim().toLowerCase());
+  const motIndex = headers.indexOf("mot");
+  const decoupageIndex = headers.indexOf("decoupage");
+  const writtenSplitIndex = headers.indexOf("decoupage_ecrit");
+  const oralSplitIndex = headers.indexOf("decoupage_oral");
+  const modeKey = getSyllableMode();
+
+  if (motIndex === -1) {
+    csvImportStatus.textContent =
+      "Le CSV doit contenir une colonne 'mot'. Verifiez aussi le separateur utilise.";
+    renderCsvPreview([]);
+    return;
+  }
+
+  const ignoredLines = [];
+  const importedEntries = rows
+    .slice(1)
+    .map((row, index) => {
+      const mot = sanitizeWord((row[motIndex] ?? "").trim());
+      const genericSplit = (row[decoupageIndex] ?? "").trim();
+      const writtenSplit = (row[writtenSplitIndex] ?? "").trim();
+      const oralSplit = (row[oralSplitIndex] ?? "").trim();
+      const decoupage =
+        modeKey === "oral"
+          ? oralSplit || genericSplit
+          : writtenSplit || genericSplit;
+
+      if (!mot) {
+        ignoredLines.push(index + 2);
+        return null;
+      }
+
+      const forcedParts = decoupage
+        ? decoupage
+            .split(/[-|/]/)
+            .map((part) => sanitizeWord(part))
+            .filter(Boolean)
+        : [];
+
+      return {
+        original: mot,
+        forcedSyllables: forcedParts.length > 1 ? forcedParts : null,
+      };
+    })
+    .filter(Boolean);
+
+  importedCsvEntries = importedEntries;
+  wordsInput.value = importedEntries
+    .map((entry) =>
+      entry.forcedSyllables ? entry.forcedSyllables.join("-") : entry.original,
+    )
+    .join("\n");
+
+  renderCsvPreview(importedEntries, ignoredLines);
+  csvImportStatus.textContent =
+    ignoredLines.length > 0
+      ? `${importedEntries.length} mot(s) importes depuis ${file.name} avec ${ignoredLines.length} ligne(s) ignoree(s). Mode actuel : ${getSyllableModeLabel().toLowerCase()}. Separateur detecte: "${delimiter}".`
+      : `${importedEntries.length} mot(s) importes depuis ${file.name}. Mode actuel : ${getSyllableModeLabel().toLowerCase()}. Separateur detecte: "${delimiter}".`;
+}
+
+function reshuffleActivity() {
+  activityState = activityState.map((item) => ({
+    ...item,
+    currentSlots: Array(item.syllables.length).fill(null),
+    bankTokens: shuffleSyllables(item.syllables),
+    challengeSlots: Array(item.syllables.length).fill(null),
+  }));
+
+  selectedTokenId = null;
+  resetChallengeState();
+  renderAll();
+}
+
+function detectCsvDelimiter(content) {
+  const lines = content
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .slice(0, 5);
+
+  const commaScore = lines.reduce((sum, line) => sum + countOutsideQuotes(line, ","), 0);
+  const semicolonScore = lines.reduce((sum, line) => sum + countOutsideQuotes(line, ";"), 0);
+
+  return semicolonScore > commaScore ? ";" : ",";
+}
+
+function countOutsideQuotes(line, separator) {
+  let count = 0;
+  let inQuotes = false;
+
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index];
+    const next = line[index + 1];
+
+    if (char === '"') {
+      if (inQuotes && next === '"') {
+        index += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+
+    if (char === separator && !inQuotes) {
+      count += 1;
+    }
+  }
+
+  return count;
+}
+
+function parseCsv(content, delimiter = ",") {
+  const rows = [];
+  let row = [];
+  let cell = "";
+  let inQuotes = false;
+
+  for (let index = 0; index < content.length; index += 1) {
+    const char = content[index];
+    const next = content[index + 1];
+
+    if (char === '"') {
+      if (inQuotes && next === '"') {
+        cell += '"';
+        index += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+
+    if (char === delimiter && !inQuotes) {
+      row.push(cell);
+      cell = "";
+      continue;
+    }
+
+    if ((char === "\n" || char === "\r") && !inQuotes) {
+      if (char === "\r" && next === "\n") {
+        index += 1;
+      }
+      row.push(cell);
+      rows.push(row);
+      row = [];
+      cell = "";
+      continue;
+    }
+
+    cell += char;
+  }
+
+  if (cell.length > 0 || row.length > 0) {
+    row.push(cell);
+    rows.push(row);
+  }
+
+  return rows.filter((currentRow) => currentRow.some((value) => value.trim() !== ""));
+}
+
+function renderCsvPreview(entries, ignoredLines = []) {
+  csvPreviewCount.textContent = `${entries.length} ligne${entries.length > 1 ? "s" : ""}`;
+
+  if (entries.length === 0) {
+    csvPreviewList.textContent = "Aucun apercu pour le moment.";
+    return;
+  }
+
+  const previewEntries = entries.slice(0, 8);
+  csvPreviewList.innerHTML = "";
+
+  previewEntries.forEach((entry, index) => {
+    const item = document.createElement("div");
+    item.className = "csv-preview-item";
+
+    const word = document.createElement("strong");
+    word.textContent = entry.original;
+
+    const details = document.createElement("small");
+    details.textContent = entry.forcedSyllables
+      ? `decoupage: ${entry.forcedSyllables.join("-")}`
+      : `${getSyllableModeLabel().toLowerCase()} automatique`;
+
+    item.append(word, details);
+    csvPreviewList.append(item);
+  });
+
+  if (entries.length > previewEntries.length) {
+    const more = document.createElement("small");
+    more.textContent = `... et ${entries.length - previewEntries.length} autre(s) ligne(s).`;
+    csvPreviewList.append(more);
+  }
+
+  if (ignoredLines.length > 0) {
+    const warning = document.createElement("small");
+    warning.textContent = `Lignes ignorees: ${ignoredLines.join(", ")}.`;
+    csvPreviewList.append(warning);
+  }
+}
+
+function parseWords(rawValue) {
+  return rawValue
+    .split(/\n+/)
+    .map((word) => parseWordEntry(word))
+    .filter(Boolean);
+}
+
+function parseWordEntry(word) {
+  const cleaned = word.trim();
+  if (!cleaned) {
+    return null;
+  }
+
+  const forcedParts = cleaned
+    .split("-")
+    .map((part) => sanitizeWord(part))
+    .filter(Boolean);
+
+  if (forcedParts.length > 1) {
+    return {
+      original: forcedParts.join(""),
+      forcedSyllables: forcedParts,
+    };
+  }
+
+  const original = sanitizeWord(cleaned);
+  if (!original) {
+    return null;
+  }
+
+  return {
+    original,
+    forcedSyllables: null,
+  };
+}
+
+function sanitizeWord(word) {
+  return word
+    .trim()
+    .replace(/\s+/g, "")
+    .replace(/[^A-Za-zÀ-ÖØ-öø-ÿ']/g, "");
+}
+
+function createWordActivity(entry, index) {
+  const word = entry.original;
+  const syllables = entry.forcedSyllables ?? splitIntoSyllables(word, getSyllableMode());
+  return {
+    id: `word-${index}`,
+    index,
+    word,
+    syllables,
+    hasForcedSyllables: Boolean(entry.forcedSyllables),
+    syllableMode: getSyllableMode(),
+    currentSlots: Array(syllables.length).fill(null),
+    challengeSlots: Array(syllables.length).fill(null),
+    bankTokens: shuffleSyllables(syllables),
+  };
+}
+
+function resetChallengeState() {
+  challengeState = {
+    selectedTokenId: null,
+    bankTokens: shuffleSyllables(activityState.flatMap((item) => item.syllables)),
+  };
+}
+
+function splitIntoSyllables(word, mode = "written") {
+  const validated = getDictionaryEntry(word);
+  if (validated?.[mode]) {
+    return validated[mode];
+  }
+
+  const exception = SYLLABLE_EXCEPTIONS[mode]?.[word.toLowerCase()];
+  if (exception) {
+    return exception;
+  }
+
+  if (mode === "oral") {
+    return splitIntoOralSyllables(word);
+  }
+
+  return splitIntoWrittenSyllables(word);
+}
+
+function getDictionaryEntry(word) {
+  const key = word.toLowerCase();
+  return teacherDictionary[key] || BUILTIN_REFERENCE[key] || null;
+}
+
+function loadTeacherDictionary() {
+  try {
+    const raw = window.localStorage?.getItem(DICTIONARY_STORAGE_KEY);
+    if (!raw) {
+      return {};
+    }
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch (error) {
+    return {};
+  }
+}
+
+function persistTeacherDictionary() {
+  try {
+    window.localStorage?.setItem(
+      DICTIONARY_STORAGE_KEY,
+      JSON.stringify(teacherDictionary, null, 2),
+    );
+  } catch (error) {
+    // Ignore localStorage errors and keep the in-memory dictionary.
+  }
+}
+
+function saveDictionaryEntry() {
+  const word = sanitizeWord(dictWordInput.value);
+  const written = parseManualSplit(dictWrittenInput.value);
+  const oral = parseManualSplit(dictOralInput.value);
+
+  if (!word || written.length === 0 || oral.length === 0) {
+    dictStatus.textContent = "Renseignez le mot, le decoupage ecrit et le decoupage oral.";
+    return;
+  }
+
+  teacherDictionary[word.toLowerCase()] = {
+    written,
+    oral,
+  };
+  persistTeacherDictionary();
+  dictStatus.textContent = `${word} enregistre dans le dictionnaire enseignant.`;
+  renderDictionaryList();
+  generateActivity();
+}
+
+function deleteDictionaryEntry() {
+  const word = sanitizeWord(dictWordInput.value);
+  if (!word) {
+    dictStatus.textContent = "Saisissez d'abord un mot a supprimer.";
+    return;
+  }
+
+  delete teacherDictionary[word.toLowerCase()];
+  persistTeacherDictionary();
+  dictStatus.textContent = `${word} supprime du dictionnaire enseignant.`;
+  renderDictionaryList();
+  generateActivity();
+}
+
+async function importTeacherDictionary() {
+  const file = dictImportFileInput.files?.[0];
+  if (!file) {
+    dictStatus.textContent = "Choisissez d'abord un fichier JSON.";
+    return;
+  }
+
+  try {
+    const content = JSON.parse(await file.text());
+    if (!content || typeof content !== "object") {
+      throw new Error("format");
+    }
+
+    const imported = {};
+    for (const [word, value] of Object.entries(content)) {
+      if (
+        value &&
+        Array.isArray(value.written) &&
+        Array.isArray(value.oral) &&
+        sanitizeWord(word)
+      ) {
+        imported[word.toLowerCase()] = {
+          written: value.written.map((part) => sanitizeWord(part)).filter(Boolean),
+          oral: value.oral.map((part) => sanitizeWord(part)).filter(Boolean),
+        };
+      }
+    }
+
+    teacherDictionary = imported;
+    persistTeacherDictionary();
+    dictStatus.textContent = `${Object.keys(imported).length} mot(s) importes dans le dictionnaire enseignant.`;
+    renderDictionaryList();
+    generateActivity();
+  } catch (error) {
+    dictStatus.textContent = "Le fichier JSON n'est pas exploitable.";
+  }
+}
+
+function exportTeacherDictionary() {
+  const blob = new Blob([JSON.stringify(teacherDictionary, null, 2)], {
+    type: "application/json",
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "syllabes-dictionnaire-enseignant.json";
+  link.click();
+  URL.revokeObjectURL(url);
+  dictStatus.textContent = "Dictionnaire enseignant exporte en JSON.";
+}
+
+function renderDictionaryList() {
+  const entries = Object.entries(teacherDictionary).sort(([left], [right]) =>
+    left.localeCompare(right),
+  );
+
+  dictCount.textContent = `${entries.length} mot${entries.length > 1 ? "s" : ""}`;
+
+  if (entries.length === 0) {
+    dictList.textContent = "Aucune correction pour le moment.";
+    return;
+  }
+
+  dictList.innerHTML = "";
+  entries.slice(0, 12).forEach(([word, value]) => {
+    const item = document.createElement("div");
+    item.className = "csv-preview-item";
+
+    const name = document.createElement("strong");
+    name.textContent = word;
+
+    const details = document.createElement("small");
+    details.textContent = `ecrit: ${value.written.join("-")} | oral: ${value.oral.join("-")}`;
+
+    item.append(name, details);
+    item.addEventListener("click", () => {
+      dictWordInput.value = word;
+      dictWrittenInput.value = value.written.join("-");
+      dictOralInput.value = value.oral.join("-");
+    });
+    dictList.append(item);
+  });
+}
+
+function parseManualSplit(value) {
+  return value
+    .split(/[-|/]/)
+    .map((part) => sanitizeWord(part))
+    .filter(Boolean);
+}
+
+function splitIntoWrittenSyllables(word) {
+  const endingBasedSplit = splitWrittenDoubleConsonantEnding(word);
+  if (endingBasedSplit) {
+    return endingBasedSplit;
+  }
+
+  const tokens = tokenizeWrittenWord(word);
+  if (tokens.length === 0) {
+    return [word];
+  }
+
+  const syllables = [];
+  let current = "";
+  let index = 0;
+
+  while (index < tokens.length) {
+    while (index < tokens.length && tokens[index].type === "consonant") {
+      current += tokens[index].text;
+      index += 1;
+    }
+
+    if (index >= tokens.length) {
+      if (current) {
+        if (syllables.length > 0) {
+          syllables[syllables.length - 1] += current;
+        } else {
+          syllables.push(current);
+        }
+      }
+      break;
+    }
+
+    current += tokens[index].text;
+    index += 1;
+
+    if (index >= tokens.length) {
+      syllables.push(current);
+      break;
+    }
+
+    const consonants = [];
+    while (index < tokens.length && tokens[index].type === "consonant") {
+      consonants.push(tokens[index].text);
+      index += 1;
+    }
+
+    if (index >= tokens.length) {
+      current += consonants.join("");
+      syllables.push(current);
+      break;
+    }
+
+    if (consonants.length === 0) {
+      syllables.push(current);
+      current = "";
+      continue;
+    }
+
+    if (consonants.length === 1) {
+      syllables.push(current);
+      current = consonants[0];
+      continue;
+    }
+
+    const joined = consonants.join("");
+    if (NON_SPLIT_CONSONANT_GROUPS.includes(joined.toLowerCase())) {
+      syllables.push(current);
+      current = joined;
+      continue;
+    }
+
+    if (hasWrittenDoubleConsonant(joined)) {
+      current += joined[0];
+      syllables.push(current);
+      current = joined.slice(1);
+      continue;
+    }
+
+    const splitIndex = Math.floor(consonants.length / 2);
+    current += consonants.slice(0, splitIndex).join("");
+    syllables.push(current);
+    current = consonants.slice(splitIndex).join("");
+  }
+
+  return mergePronouncedDiaeresisEnding(syllables.filter(Boolean), word);
+}
+
+function splitWrittenDoubleConsonantEnding(word) {
+  const lowered = word.toLowerCase();
+
+  for (const ending of WRITTEN_DOUBLE_CONSONANT_ENDINGS) {
+    if (!lowered.endsWith(ending) || word.length <= ending.length) {
+      continue;
+    }
+
+    const splitIndex = word.length - (ending.length - 1);
+    return [word.slice(0, splitIndex), word.slice(splitIndex)];
+  }
+
+  return null;
+}
+
+function splitIntoOralSyllables(word) {
+  const written = splitIntoWrittenSyllables(word);
+
+  if (written.length <= 1) {
+    return written;
+  }
+
+  const simplified = [...written];
+  mergePronouncedDiaeresisEnding(simplified, word);
+  mergeTrailingMuteESyllable(simplified, word);
+  mergeHiatusForOral(simplified);
+  mergeOuISoundForOral(simplified);
+
+  return simplified;
+}
+
+function mergePronouncedDiaeresisEnding(syllables, word) {
+  if (syllables.length < 2) {
+    return syllables;
+  }
+
+  const loweredWord = word.toLowerCase();
+  const matchingEnding = PRONOUNCED_DIAERESIS_ENDINGS.find((ending) =>
+    loweredWord.endsWith(ending),
+  );
+
+  if (!matchingEnding) {
+    return syllables;
+  }
+
+  const merged = [...syllables];
+  const tail = `${merged[merged.length - 2]}${merged[merged.length - 1]}`.toLowerCase();
+
+  if (tail === matchingEnding) {
+    merged[merged.length - 2] += merged[merged.length - 1];
+    merged.pop();
+  }
+
+  return merged;
+}
+
+function tokenizeWrittenWord(word) {
+  const tokens = [];
+  let index = 0;
+
+  while (index < word.length) {
+    const length = getWrittenVowelGroupLength(word, index);
+    if (length > 0) {
+      tokens.push({
+        type: "vowel",
+        text: word.slice(index, index + length),
+      });
+      index += length;
+      continue;
+    }
+
+    tokens.push({
+      type: "consonant",
+      text: word[index],
+    });
+    index += 1;
+  }
+
+  return tokens;
+}
+
+function getWrittenVowelGroupLength(word, start) {
+  const current = word[start] ?? "";
+
+  if (!isVowel(current.toUpperCase())) {
+    return 0;
+  }
+
+  if (hasDiaeresis(current)) {
+    return 1;
+  }
+
+  const lowered = word.toLowerCase();
+  for (const group of WRITTEN_VOWEL_GROUPS) {
+    const slice = lowered.slice(start, start + group.length);
+    if (slice === group && !containsDiaeresis(word.slice(start, start + group.length))) {
+      return group.length;
+    }
+  }
+
+  return 1;
+}
+
+function hasWrittenDoubleConsonant(cluster) {
+  return cluster.length >= 2 && cluster[0].toLowerCase() === cluster[1].toLowerCase();
+}
+
+function mergeTrailingMuteESyllable(syllables, fullWord) {
+  if (syllables.length <= 1) {
+    return;
+  }
+
+  const lastIndex = syllables.length - 1;
+  const last = syllables[lastIndex].toLowerCase();
+  const word = fullWord.toLowerCase();
+  const hasPronouncedDiaeresisEnding = PRONOUNCED_DIAERESIS_ENDINGS.some((ending) =>
+    word.endsWith(ending),
+  );
+
+  const hasMuteEEnding =
+    (!hasPronouncedDiaeresisEnding && /e?s?$/.test(word) && /e?s?$/.test(last)) ||
+    ["e", "es", "ent"].includes(last) ||
+    /(ette|ettes|elle|elles|enne|ennes|onne|onnes|erre|erres|amme|ammes|omme|ommes|euse|euses|eure|eures|ble|cles|dle|fle|gle|ple|tre|vre)$/.test(word) ||
+    /([b-df-hj-np-tv-z])\1e?s?$/i.test(word);
+
+  if (hasMuteEEnding) {
+    syllables[lastIndex - 1] += syllables[lastIndex];
+    syllables.pop();
+  }
+}
+
+function mergeHiatusForOral(syllables) {
+  if (syllables.length <= 1) {
+    return;
+  }
+
+  for (let index = syllables.length - 1; index > 0; index -= 1) {
+    const current = syllables[index];
+    const previous = syllables[index - 1];
+
+    const startsWithContractableSound = /^[aeouyàâäéèêëôöùûü]/i.test(current);
+    const previousEndsWithI = /[iyîï]$/i.test(previous);
+    const currentStartsWithDiaeresis = hasDiaeresis(current[0] ?? "");
+
+    if (previousEndsWithI && startsWithContractableSound && !currentStartsWithDiaeresis) {
+      syllables[index - 1] += syllables[index];
+      syllables.splice(index, 1);
+    }
+  }
+}
+
+function mergeOuISoundForOral(syllables) {
+  if (syllables.length <= 1) {
+    return;
+  }
+
+  for (let index = syllables.length - 1; index > 0; index -= 1) {
+    const current = syllables[index];
+    const previous = syllables[index - 1];
+
+    if (/ou$/i.test(previous) && /^i/i.test(current) && !hasDiaeresis(current[0] ?? "")) {
+      syllables[index - 1] += syllables[index];
+      syllables.splice(index, 1);
+    }
+  }
+}
+
+function findNextVowel(word, start) {
+  for (let index = start; index < word.length; index += 1) {
+    if (isVowel(word[index])) {
+      return index;
+    }
+  }
+  return -1;
+}
+
+function isVowel(char) {
+  return VOWELS.includes(char);
+}
+
+function containsVowel(part) {
+  return [...part.toUpperCase()].some((char) => isVowel(char));
+}
+
+function hasDiaeresis(char) {
+  return /[ïëüÏËÜ]/.test(char);
+}
+
+function containsDiaeresis(value) {
+  return /[ïëüÏËÜ]/.test(value);
+}
+
+function shuffleSyllables(syllables) {
+  const tokens = syllables.map((text, index) => ({
+    id: crypto.randomUUID ? crypto.randomUUID() : `token-${Date.now()}-${index}-${Math.random()}`,
+    text,
+    originalIndex: index,
+  }));
+
+  let shuffled = [...tokens];
+  let safety = 0;
+
+  while (
+    shuffled.every((token, index) => token.originalIndex === index) &&
+    shuffled.length > 1 &&
+    safety < 8
+  ) {
+    shuffled = fisherYates([...tokens]);
+    safety += 1;
+  }
+
+  return shuffled.length > 1 ? shuffled : tokens;
+}
+
+function fisherYates(items) {
+  for (let index = items.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [items[index], items[swapIndex]] = [items[swapIndex], items[index]];
+  }
+  return items;
+}
+
+function renderAll() {
+  renderInteractiveArea();
+  renderInteractiveChallengeArea();
+  renderStudentSheet();
+  renderLabelSheet();
+  renderChallengeSheet();
+  renderAnswerSheet();
+  applyPrintLayout();
+  applyPrintView();
+  updateStatusLine();
+}
+
+function renderInteractiveArea() {
+  interactiveArea.innerHTML = "";
+
+  for (const item of activityState) {
+    const card = document.createElement("article");
+    card.className = "activity-card";
+
+    const header = document.createElement("div");
+    header.className = "activity-header";
+
+    const label = document.createElement("div");
+    label.className = "activity-index";
+    label.textContent = item.index + 1;
+
+    const feedback = document.createElement("div");
+    feedback.className = `feedback ${isWordSolved(item) ? "success" : "pending"}`;
+    feedback.textContent = isWordSolved(item)
+      ? "Mot reforme correctement"
+      : `${item.syllables.length} syllabe(s) a placer`;
+
+    header.append(label, feedback);
+
+    const dropZone = document.createElement("div");
+    dropZone.className = `drop-zone ${isWordSolved(item) ? "correct" : ""}`;
+    dropZone.dataset.wordId = item.id;
+
+    enableDropZone(dropZone, () => {
+      moveSelectedOrDroppedTokenToWord(item.id);
+    });
+
+    item.currentSlots.forEach((token, slotIndex) => {
+      const slot = document.createElement("button");
+      slot.type = "button";
+      slot.className = `slot ${token ? "filled" : ""} ${isWordSolved(item) ? "correct" : ""}`;
+      slot.dataset.wordId = item.id;
+      slot.dataset.slotIndex = slotIndex;
+
+      if (token) {
+        slot.append(createTokenElement(item.id, token, {
+          location: "slot",
+          slotIndex,
+        }));
+      } else {
+        slot.textContent = "_____";
+      }
+
+      slot.addEventListener("click", () => {
+        if (token) {
+          returnTokenToBank(item.id, slotIndex);
+        } else if (selectedTokenId) {
+          placeSelectedTokenInSlot(item.id, slotIndex);
+        }
+      });
+
+      dropZone.append(slot);
+    });
+
+    const bank = document.createElement("div");
+    bank.className = "syllable-bank";
+    bank.dataset.wordId = item.id;
+
+    enableDropZone(bank, () => {
+      returnSelectedOrDroppedTokenToBank(item.id);
+    });
+
+    item.bankTokens.forEach((token) => {
+      bank.append(createTokenElement(item.id, token, { location: "bank" }));
+    });
+
+    const hint = document.createElement("p");
+    hint.className = "word-hint";
+    hint.textContent = item.hasForcedSyllables
+      ? `${getSyllableModeLabel().toLowerCase()} forcees par l'enseignant.`
+      : `${getSyllableModeLabel().toLowerCase()} automatiques simplifiees.`;
+
+    card.append(header, dropZone, bank, hint);
+    interactiveArea.append(card);
+  }
+}
+
+function renderInteractiveChallengeArea() {
+  interactiveChallengeArea.innerHTML = "";
+
+  const intro = document.createElement("p");
+  intro.className = "word-hint";
+  intro.textContent =
+    "Glissez les syllabes vers les lignes ou cliquez d'abord sur une syllabe puis sur un emplacement.";
+  interactiveChallengeArea.append(intro);
+
+  const answerList = document.createElement("div");
+  answerList.className = "challenge-answer-list";
+
+  for (const item of activityState) {
+    const row = document.createElement("article");
+    row.className = "challenge-answer-row";
+
+    const number = document.createElement("span");
+    number.className = "sheet-number";
+    number.textContent = item.index + 1;
+
+    const lines = document.createElement("div");
+    lines.className = "challenge-lines";
+
+    enableDropZone(lines, () => {
+      moveSelectedOrDroppedTokenToChallengeWord(item.id);
+    });
+
+    item.challengeSlots.forEach((token, slotIndex) => {
+      const slot = document.createElement("button");
+      slot.type = "button";
+      slot.className = `slot ${token ? "filled" : ""} ${isChallengeWordSolved(item) ? "correct" : ""}`;
+
+      if (token) {
+        slot.append(
+          createTokenElement(item.id, token, {
+            location: "challenge-slot",
+            slotIndex,
+            challenge: true,
+          }),
+        );
+      } else {
+        slot.textContent = "_____";
+      }
+
+      slot.addEventListener("click", () => {
+        if (token) {
+          returnChallengeTokenToBank(item.id, slotIndex);
+        } else if (challengeState.selectedTokenId) {
+          placeSelectedTokenInChallengeSlot(item.id, slotIndex);
+        }
+      });
+
+      lines.append(slot);
+    });
+
+    row.append(number, lines);
+    answerList.append(row);
+  }
+
+  const bank = document.createElement("div");
+  bank.className = "challenge-bank";
+  enableDropZone(bank, () => {
+    returnSelectedChallengeTokenToBank();
+  });
+
+  challengeState.bankTokens.forEach((token) => {
+    bank.append(
+      createTokenElement("challenge-bank", token, {
+        location: "challenge-bank",
+        challenge: true,
+      }),
+    );
+  });
+
+  interactiveChallengeArea.append(answerList, bank);
+}
+
+function createTokenElement(wordId, token, context) {
+  const element = document.createElement("button");
+  element.type = "button";
+  const currentSelectedId = context.challenge ? challengeState.selectedTokenId : selectedTokenId;
+  element.className = `token ${currentSelectedId === token.id ? "selected" : ""}`;
+  element.textContent = displayText(token.text);
+  element.draggable = true;
+  element.dataset.tokenId = token.id;
+  element.dataset.wordId = wordId;
+  element.dataset.location = context.location;
+
+  if (context.location === "slot") {
+    element.dataset.slotIndex = context.slotIndex;
+  }
+
+  element.addEventListener("click", () => {
+    handleTokenClick(wordId, token.id, context);
+  });
+
+  element.addEventListener("dragstart", (event) => {
+    event.dataTransfer.setData(
+      "text/plain",
+      JSON.stringify({
+        wordId,
+        tokenId: token.id,
+        location: context.location,
+        slotIndex: context.slotIndex ?? null,
+        challenge: Boolean(context.challenge),
+      }),
+    );
+    if (context.challenge) {
+      challengeState.selectedTokenId = token.id;
+    } else {
+      selectedTokenId = token.id;
+    }
+  });
+
+  element.addEventListener("dragend", () => {
+    if (context.challenge) {
+      challengeState.selectedTokenId = null;
+      renderInteractiveChallengeArea();
+    } else {
+      selectedTokenId = null;
+      renderInteractiveArea();
+    }
+  });
+
+  return element;
+}
+
+function handleTokenClick(wordId, tokenId, context) {
+  const currentSelectedId = context.challenge ? challengeState.selectedTokenId : selectedTokenId;
+
+  if (currentSelectedId === tokenId) {
+    if (context.challenge) {
+      challengeState.selectedTokenId = null;
+      renderInteractiveChallengeArea();
+    } else {
+      selectedTokenId = null;
+      renderInteractiveArea();
+    }
+    return;
+  }
+
+  if (currentSelectedId && context.location === "slot") {
+    returnTokenToBank(wordId, Number(context.slotIndex));
+    selectedTokenId = null;
+    return;
+  }
+
+  if (currentSelectedId && context.location === "challenge-slot") {
+    returnChallengeTokenToBank(wordId, Number(context.slotIndex));
+    challengeState.selectedTokenId = null;
+    return;
+  }
+
+  if (context.challenge) {
+    challengeState.selectedTokenId = tokenId;
+    renderInteractiveChallengeArea();
+  } else {
+    selectedTokenId = tokenId;
+    renderInteractiveArea();
+  }
+}
+
+function enableDropZone(element, onDropAction) {
+  element.addEventListener("dragover", (event) => {
+    event.preventDefault();
+    element.classList.add("is-over");
+  });
+
+  element.addEventListener("dragleave", () => {
+    element.classList.remove("is-over");
+  });
+
+  element.addEventListener("drop", (event) => {
+    event.preventDefault();
+    element.classList.remove("is-over");
+    const payload = readDragPayload(event);
+    if (!payload) {
+      return;
+    }
+
+    if (payload.challenge) {
+      challengeState.selectedTokenId = payload.tokenId;
+    } else {
+      selectedTokenId = payload.tokenId;
+    }
+    onDropAction(payload);
+  });
+}
+
+function readDragPayload(event) {
+  try {
+    return JSON.parse(event.dataTransfer.getData("text/plain"));
+  } catch (error) {
+    return null;
+  }
+}
+
+function moveSelectedOrDroppedTokenToWord(wordId) {
+  const item = findWordActivity(wordId);
+  const emptySlotIndex = item.currentSlots.findIndex((token) => token === null);
+
+  if (emptySlotIndex === -1 || !selectedTokenId) {
+    renderInteractiveArea();
+    return;
+  }
+
+  placeSelectedTokenInSlot(wordId, emptySlotIndex);
+}
+
+function placeSelectedTokenInSlot(wordId, slotIndex) {
+  const location = findTokenLocation(selectedTokenId);
+  if (!location) {
+    selectedTokenId = null;
+    renderInteractiveArea();
+    return;
+  }
+
+  const targetItem = findWordActivity(wordId);
+  if (targetItem.currentSlots[slotIndex]) {
+    renderInteractiveArea();
+    return;
+  }
+
+  const token = removeTokenFromLocation(location);
+  if (!token) {
+    selectedTokenId = null;
+    renderInteractiveArea();
+    return;
+  }
+
+  targetItem.currentSlots[slotIndex] = token;
+  selectedTokenId = null;
+  renderAll();
+}
+
+function returnSelectedOrDroppedTokenToBank(wordId) {
+  if (!selectedTokenId) {
+    renderInteractiveArea();
+    return;
+  }
+
+  const location = findTokenLocation(selectedTokenId);
+  if (!location) {
+    selectedTokenId = null;
+    renderInteractiveArea();
+    return;
+  }
+
+  const token = removeTokenFromLocation(location);
+  const targetItem = findWordActivity(wordId);
+  targetItem.bankTokens.push(token);
+  selectedTokenId = null;
+  renderAll();
+}
+
+function returnTokenToBank(wordId, slotIndex) {
+  const item = findWordActivity(wordId);
+  const token = item.currentSlots[slotIndex];
+  if (!token) {
+    return;
+  }
+
+  item.currentSlots[slotIndex] = null;
+  item.bankTokens.push(token);
+  selectedTokenId = null;
+  renderAll();
+}
+
+function findTokenLocation(tokenId) {
+  for (const item of activityState) {
+    const bankIndex = item.bankTokens.findIndex((token) => token.id === tokenId);
+    if (bankIndex >= 0) {
+      return { itemId: item.id, area: "bank", index: bankIndex };
+    }
+
+    const slotIndex = item.currentSlots.findIndex((token) => token && token.id === tokenId);
+    if (slotIndex >= 0) {
+      return { itemId: item.id, area: "slot", index: slotIndex };
+    }
+  }
+
+  return null;
+}
+
+function findChallengeTokenLocation(tokenId) {
+  const bankIndex = challengeState.bankTokens.findIndex((token) => token.id === tokenId);
+  if (bankIndex >= 0) {
+    return { area: "challenge-bank", index: bankIndex };
+  }
+
+  for (const item of activityState) {
+    const slotIndex = item.challengeSlots.findIndex((token) => token && token.id === tokenId);
+    if (slotIndex >= 0) {
+      return { itemId: item.id, area: "challenge-slot", index: slotIndex };
+    }
+  }
+
+  return null;
+}
+
+function removeTokenFromLocation(location) {
+  const item = findWordActivity(location.itemId);
+  if (location.area === "bank") {
+    return item.bankTokens.splice(location.index, 1)[0] ?? null;
+  }
+
+  const token = item.currentSlots[location.index];
+  item.currentSlots[location.index] = null;
+  return token ?? null;
+}
+
+function removeChallengeTokenFromLocation(location) {
+  if (location.area === "challenge-bank") {
+    return challengeState.bankTokens.splice(location.index, 1)[0] ?? null;
+  }
+
+  const item = findWordActivity(location.itemId);
+  const token = item.challengeSlots[location.index];
+  item.challengeSlots[location.index] = null;
+  return token ?? null;
+}
+
+function findWordActivity(wordId) {
+  return activityState.find((item) => item.id === wordId);
+}
+
+function isWordSolved(item) {
+  return item.currentSlots.every(Boolean) &&
+    item.currentSlots.map((token) => token.text).join("").toUpperCase() === item.word.toUpperCase();
+}
+
+function isChallengeWordSolved(item) {
+  return item.challengeSlots.every(Boolean) &&
+    item.challengeSlots.map((token) => token.text).join("").toUpperCase() === item.word.toUpperCase();
+}
+
+function moveSelectedOrDroppedTokenToChallengeWord(wordId) {
+  const item = findWordActivity(wordId);
+  const emptySlotIndex = item.challengeSlots.findIndex((token) => token === null);
+
+  if (emptySlotIndex === -1 || !challengeState.selectedTokenId) {
+    renderInteractiveChallengeArea();
+    return;
+  }
+
+  placeSelectedTokenInChallengeSlot(wordId, emptySlotIndex);
+}
+
+function placeSelectedTokenInChallengeSlot(wordId, slotIndex) {
+  const location = findChallengeTokenLocation(challengeState.selectedTokenId);
+  if (!location) {
+    challengeState.selectedTokenId = null;
+    renderInteractiveChallengeArea();
+    return;
+  }
+
+  const targetItem = findWordActivity(wordId);
+  if (targetItem.challengeSlots[slotIndex]) {
+    renderInteractiveChallengeArea();
+    return;
+  }
+
+  const token = removeChallengeTokenFromLocation(location);
+  if (!token) {
+    challengeState.selectedTokenId = null;
+    renderInteractiveChallengeArea();
+    return;
+  }
+
+  targetItem.challengeSlots[slotIndex] = token;
+  challengeState.selectedTokenId = null;
+  renderInteractiveChallengeArea();
+}
+
+function returnSelectedChallengeTokenToBank() {
+  if (!challengeState.selectedTokenId) {
+    renderInteractiveChallengeArea();
+    return;
+  }
+
+  const location = findChallengeTokenLocation(challengeState.selectedTokenId);
+  if (!location) {
+    challengeState.selectedTokenId = null;
+    renderInteractiveChallengeArea();
+    return;
+  }
+
+  const token = removeChallengeTokenFromLocation(location);
+  challengeState.bankTokens.push(token);
+  challengeState.selectedTokenId = null;
+  renderInteractiveChallengeArea();
+}
+
+function returnChallengeTokenToBank(wordId, slotIndex) {
+  const item = findWordActivity(wordId);
+  const token = item.challengeSlots[slotIndex];
+  if (!token) {
+    return;
+  }
+
+  item.challengeSlots[slotIndex] = null;
+  challengeState.bankTokens.push(token);
+  challengeState.selectedTokenId = null;
+  renderInteractiveChallengeArea();
+}
+
+function renderStudentSheet() {
+  studentSheetBody.innerHTML = "";
+  studentSheetBody.className = `exercise-list sheet-style-${sheetStyleSelect.value}`;
+
+  activityState.forEach((item) => {
+    const box = document.createElement("section");
+    box.className = `sheet-exercise ${toneClass(item.index)}`;
+
+    const head = document.createElement("div");
+    head.className = "sheet-line-head";
+
+    const number = document.createElement("span");
+    number.className = "sheet-number";
+    number.textContent = item.index + 1;
+
+    const text = document.createElement("strong");
+    text.textContent = `${item.syllables.length} syllabe(s)`;
+
+    const meta = document.createElement("span");
+    meta.className = "sheet-meta";
+    meta.textContent = item.hasForcedSyllables
+      ? `${getSyllableModeLabel().toLowerCase()} choisies`
+      : `${getSyllableModeLabel().toLowerCase()} automatiques`;
+
+    head.append(number, text, meta);
+
+    const dropRow = document.createElement("div");
+    dropRow.className = "sheet-drop-row";
+
+    item.syllables.forEach(() => {
+      const slot = document.createElement("div");
+      slot.className = "sheet-slot empty";
+      slot.textContent = " ";
+      dropRow.append(slot);
+    });
+
+    const labelRow = document.createElement("div");
+    labelRow.className = "sheet-label-row";
+    const labels = shuffleSyllables(item.syllables);
+
+    labels.forEach((token) => {
+      const tag = document.createElement("div");
+      tag.className = "sheet-slot syllable-hint";
+      tag.textContent = displayText(token.text);
+      labelRow.append(tag);
+    });
+
+    box.append(head, dropRow, labelRow);
+    studentSheetBody.append(box);
+  });
+}
+
+function renderLabelSheet() {
+  labelSheetBody.innerHTML = "";
+
+  activityState.forEach((item) => {
+    const group = document.createElement("section");
+    group.className = `label-group ${toneClass(item.index)}`;
+
+    const title = document.createElement("p");
+    title.className = "label-group-title";
+    title.textContent = item.hasForcedSyllables
+      ? `Serie ${item.index + 1} - ${item.syllables.length} ${getSyllableModeLabel().toLowerCase()} - decoupage choisi`
+      : `Serie ${item.index + 1} - ${item.syllables.length} ${getSyllableModeLabel().toLowerCase()}`;
+
+    const grid = document.createElement("div");
+    grid.className = "label-grid";
+
+    shuffleSyllables(item.syllables).forEach((token) => {
+      const tile = document.createElement("div");
+      tile.className = "label-tile";
+      tile.textContent = displayText(token.text);
+      grid.append(tile);
+    });
+
+    group.append(title, grid);
+    labelSheetBody.append(group);
+  });
+}
+
+function renderChallengeSheet() {
+  challengeSheetBody.innerHTML = "";
+
+  const intro = document.createElement("p");
+  intro.className = "challenge-intro";
+  intro.textContent =
+    "Consigne : retrouve chaque prenom en utilisant toutes les syllabes melangees ci-dessous, sans modele.";
+  challengeSheetBody.append(intro);
+
+  const answerList = document.createElement("div");
+  answerList.className = "challenge-answer-list";
+
+  activityState.forEach((item) => {
+    const row = document.createElement("div");
+    row.className = "challenge-answer-row";
+
+    const number = document.createElement("span");
+    number.className = "sheet-number";
+    number.textContent = item.index + 1;
+
+    const lines = document.createElement("div");
+    lines.className = "challenge-lines";
+    item.syllables.forEach(() => {
+      const line = document.createElement("span");
+      line.className = "challenge-line";
+      lines.append(line);
+    });
+
+    row.append(number, lines);
+    answerList.append(row);
+  });
+
+  const bank = document.createElement("div");
+  bank.className = "challenge-bank";
+  const mixedTokens = shuffleSyllables(
+    activityState.flatMap((item) => item.syllables),
+  );
+
+  mixedTokens.forEach((token) => {
+    const chip = document.createElement("span");
+    chip.className = "challenge-token";
+    chip.textContent = displayText(token.text);
+    bank.append(chip);
+  });
+
+  challengeSheetBody.append(answerList, bank);
+}
+
+function renderAnswerSheet() {
+  answerSheetBody.innerHTML = "";
+
+  activityState.forEach((item) => {
+    const row = document.createElement("section");
+    row.className = `answer-row ${toneClass(item.index)}`;
+
+    const number = document.createElement("span");
+    number.className = "sheet-number";
+    number.textContent = item.index + 1;
+
+    const word = document.createElement("strong");
+    word.className = "answer-word";
+    word.textContent = displayText(item.word);
+
+    const syllables = document.createElement("div");
+    syllables.className = "answer-syllables";
+    item.syllables.forEach((syllable) => {
+      const chip = document.createElement("span");
+      chip.className = "answer-chip";
+      chip.textContent = displayText(syllable);
+      syllables.append(chip);
+    });
+
+    const method = document.createElement("span");
+    method.className = "answer-method";
+    method.textContent = item.hasForcedSyllables
+      ? `${getSyllableModeLabel().toLowerCase()} forcees`
+      : `${getSyllableModeLabel().toLowerCase()} automatiques`;
+
+    row.append(number, word, syllables, method);
+    answerSheetBody.append(row);
+  });
+}
+
+function updateStatusLine() {
+  const total = activityState.length;
+  const solved = activityState.filter((item) => isWordSolved(item)).length;
+  const totalSyllables = activityState.reduce((sum, item) => sum + item.syllables.length, 0);
+
+  statusLine.textContent =
+    total === 0
+      ? "Aucune activite generee."
+      : `${total} mot(s), ${totalSyllables} ${getSyllableModeLabel().toLowerCase()}, ${solved} mot(s) deja reforme(s).`;
+}
+
+function syncSheetHeader() {
+  sheetTitle.textContent = titleInput.value.trim() || "Je reconstruis les mots";
+  sheetInstruction.textContent =
+    instructionInput.value.trim() ||
+    "Observe les syllabes, deplace-les puis reconstruis chaque mot.";
+}
+
+function updateSyllableModeHelp() {
+  syllableModeHelp.textContent =
+    getSyllableMode() === "oral"
+      ? "Mode actuel : syllabes orales. Le programme ne compte pas certaines finales en e muet, fusionne plusieurs finales comme -ette / -elle / -onne et regroupe certains hiatus comme -ia. Une verification reste conseillee."
+      : "Mode actuel : syllabes ecrites. Le programme decoupe le mot ecrit, avec quelques exceptions scolaires frequentes.";
+}
+
+function applyAppearanceSettings() {
+  document.body.classList.remove(...FONT_CLASSES, ...SIZE_CLASSES);
+  document.body.classList.add(fontSelect.value, textSizeSelect.value);
+}
+
+function applyPrintView() {
+  printRoot.classList.remove("view-sheet", "view-labels", "view-challenge", "hide-correction");
+  if (printViewSelect.value === "sheet") {
+    printRoot.classList.add("view-sheet");
+  } else if (printViewSelect.value === "challenge") {
+    printRoot.classList.add("view-challenge");
+  } else if (printViewSelect.value === "labels") {
+    printRoot.classList.add("view-labels");
+  }
+
+  if (!showCorrectionToggle.checked) {
+    printRoot.classList.add("hide-correction");
+  }
+}
+
+function applyPrintLayout() {
+  printRoot.classList.toggle("labels-on-separate-page", separateLabelPageToggle.checked);
+}
+
+function toneClass(index) {
+  if (!groupColorsToggle.checked) {
+    return "";
+  }
+  return `tone-${index % 4}`;
+}
+
+function displayText(text) {
+  return uppercaseToggle.checked ? text.toUpperCase() : text.toLowerCase();
+}
+
+function getSyllableMode() {
+  return syllableModeSelect.value;
+}
+
+function getSyllableModeLabel() {
+  return getSyllableMode() === "oral" ? "syllabes orales" : "syllabes ecrites";
+}
+</script>
+</body>
+</html>
