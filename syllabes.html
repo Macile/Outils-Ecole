@@ -1701,258 +1701,231 @@ function parseManualSplit(value) {
     .filter(Boolean);
 }
 
+/* ==========================================================================
+   SYLLABATION FRANCAISE — Algorithme par attaque maximale (onset maximal)
+
+   Principe : une syllabe francaise = (attaque) + noyau + (coda)
+   - Le noyau est une voyelle ou un groupe vocalique (ou, oi, ai, eau...)
+   - L'attaque est le plus grand groupe de consonnes VALIDE en debut de syllabe
+   - La coda recoit les consonnes restantes
+
+   Regle de coupure : entre deux noyaux vocaliques, on attribue le MAXIMUM
+   de consonnes a l'attaque de la syllabe suivante, tant que ce groupe est
+   une attaque valide en francais.
+   ========================================================================== */
+
+// Attaques valides en francais (consonne + liquide, groupes speciaux)
+const VALID_ONSETS = new Set([
+  "b","c","d","f","g","h","j","k","l","m","n","p","q","r","s","t","v","w","x","z",
+  "bl","br","ch","cl","cr","dr","fl","fr","gl","gn","gr","gu",
+  "ph","pl","pr","qu","rh","sc","sk","sl","sm","sn","sp","st","sv","sw",
+  "th","tr","vr","wr",
+  "scr","spl","spr","str","sch",
+]);
+
 function splitIntoWrittenSyllables(word) {
-  const endingBasedSplit = splitWrittenDoubleConsonantEnding(word);
-  if (endingBasedSplit) {
-    return endingBasedSplit;
-  }
-
-  const tokens = tokenizeWrittenWord(word);
-  if (tokens.length === 0) {
-    return [word];
-  }
-
-  const syllables = [];
-  let current = "";
-  let index = 0;
-
-  while (index < tokens.length) {
-    while (index < tokens.length && tokens[index].type === "consonant") {
-      current += tokens[index].text;
-      index += 1;
-    }
-
-    if (index >= tokens.length) {
-      if (current) {
-        if (syllables.length > 0) {
-          syllables[syllables.length - 1] += current;
-        } else {
-          syllables.push(current);
-        }
+  // 1. Identifier les positions de chaque caractere : voyelle ou consonne
+  var chars = [];
+  var i = 0;
+  var low = word.toLowerCase();
+  while (i < low.length) {
+    // Tester les groupes vocaliques (du plus long au plus court)
+    var found = false;
+    for (var g = 0; g < WRITTEN_VOWEL_GROUPS.length; g++) {
+      var grp = WRITTEN_VOWEL_GROUPS[g];
+      if (low.slice(i, i + grp.length) === grp && !containsDiaeresis(word.slice(i, i + grp.length))) {
+        chars.push({ text: word.slice(i, i + grp.length), type: "v" });
+        i += grp.length;
+        found = true;
+        break;
       }
-      break;
     }
-
-    current += tokens[index].text;
-    index += 1;
-
-    if (index >= tokens.length) {
-      syllables.push(current);
-      break;
-    }
-
-    const consonants = [];
-    while (index < tokens.length && tokens[index].type === "consonant") {
-      consonants.push(tokens[index].text);
-      index += 1;
-    }
-
-    if (index >= tokens.length) {
-      current += consonants.join("");
-      syllables.push(current);
-      break;
-    }
-
-    if (consonants.length === 0) {
-      syllables.push(current);
-      current = "";
+    if (found) continue;
+    if (hasDiaeresis(low[i])) {
+      chars.push({ text: word.slice(i, i + 1), type: "v" });
+      i += 1;
       continue;
     }
-
-    if (consonants.length === 1) {
-      syllables.push(current);
-      current = consonants[0];
+    if (isVowel(low[i].toUpperCase())) {
+      chars.push({ text: word.slice(i, i + 1), type: "v" });
+      i += 1;
       continue;
     }
-
-    const joined = consonants.join("");
-    if (NON_SPLIT_CONSONANT_GROUPS.includes(joined.toLowerCase())) {
-      syllables.push(current);
-      current = joined;
-      continue;
-    }
-
-    if (hasWrittenDoubleConsonant(joined)) {
-      current += joined[0];
-      syllables.push(current);
-      current = joined.slice(1);
-      continue;
-    }
-
-    const splitIndex = Math.floor(consonants.length / 2);
-    current += consonants.slice(0, splitIndex).join("");
-    syllables.push(current);
-    current = consonants.slice(splitIndex).join("");
+    chars.push({ text: word.slice(i, i + 1), type: "c" });
+    i += 1;
   }
 
-  return mergePronouncedDiaeresisEnding(syllables.filter(Boolean), word);
-}
+  // 2. Regrouper en blocs V et C alternants
+  var blocks = [];
+  for (var k = 0; k < chars.length; k++) {
+    if (blocks.length > 0 && blocks[blocks.length - 1].type === chars[k].type) {
+      blocks[blocks.length - 1].text += chars[k].text;
+    } else {
+      blocks.push({ text: chars[k].text, type: chars[k].type });
+    }
+  }
 
-function splitWrittenDoubleConsonantEnding(word) {
-  const lowered = word.toLowerCase();
+  // 3. Trouver les noyaux vocaliques (indices dans blocks)
+  var vowelIndices = [];
+  for (var b = 0; b < blocks.length; b++) {
+    if (blocks[b].type === "v") vowelIndices.push(b);
+  }
+  if (vowelIndices.length <= 1) return [word];
 
-  for (const ending of WRITTEN_DOUBLE_CONSONANT_ENDINGS) {
-    if (!lowered.endsWith(ending) || word.length <= ending.length) {
+  // 4. Pour chaque paire de noyaux consecutifs, couper le groupe consonantique
+  //    entre eux selon le principe d'attaque maximale
+  var syllables = [];
+  var syllStart = 0; // index dans blocks
+
+  for (var vi = 0; vi < vowelIndices.length - 1; vi++) {
+    var vIdx = vowelIndices[vi];     // noyau courant
+    var vNext = vowelIndices[vi + 1]; // noyau suivant
+
+    // Bloc(s) de consonnes entre les deux noyaux
+    if (vNext === vIdx + 1) {
+      // Hiatus : deux voyelles sans consonne entre elles → couper
+      var syl = "";
+      for (var s = syllStart; s <= vIdx; s++) syl += blocks[s].text;
+      syllables.push(syl);
+      syllStart = vIdx + 1;
       continue;
     }
 
-    const splitIndex = word.length - (ending.length - 1);
-    return [word.slice(0, splitIndex), word.slice(splitIndex)];
+    // Il y a un bloc de consonnes entre vIdx et vNext (normalement a vIdx+1)
+    var consonantBlock = blocks[vIdx + 1];
+    if (!consonantBlock || consonantBlock.type !== "c") {
+      var syl = "";
+      for (var s = syllStart; s <= vIdx; s++) syl += blocks[s].text;
+      syllables.push(syl);
+      syllStart = vIdx + 1;
+      continue;
+    }
+
+    var cc = consonantBlock.text;
+    var ccLow = cc.toLowerCase();
+
+    // Trouver la coupure : attribuer le maximum de consonnes a l'attaque suivante
+    var cutPos = cc.length; // tout en attaque par defaut
+    for (var onset = cc.length; onset >= 0; onset--) {
+      var candidateOnset = ccLow.slice(cc.length - onset);
+      var candidateCoda = cc.slice(0, cc.length - onset);
+
+      if (onset === 0) {
+        // Toutes les consonnes restent en coda
+        cutPos = cc.length;
+        break;
+      }
+
+      if (VALID_ONSETS.has(candidateOnset)) {
+        cutPos = cc.length - onset;
+        break;
+      }
+    }
+
+    // Si aucune attaque valide trouvee, couper apres la premiere consonne
+    if (cutPos === cc.length && cc.length > 1) cutPos = 1;
+
+    // Doubles consonnes identiques : toujours couper entre les deux (ll, mm, nn, ss, tt...)
+    if (cc.length === 2 && ccLow[0] === ccLow[1]) cutPos = 1;
+    if (cc.length > 2 && ccLow[0] === ccLow[1]) {
+      // Commence par double → couper apres la premiere, le reste en attaque
+      var restOnset = ccLow.slice(1);
+      if (VALID_ONSETS.has(restOnset)) cutPos = 1;
+    }
+
+    // Construire la syllabe : tout de syllStart a vIdx + coda
+    var syl = "";
+    for (var s = syllStart; s <= vIdx; s++) syl += blocks[s].text;
+    syl += cc.slice(0, cutPos);
+    syllables.push(syl);
+
+    // Remplacer le bloc de consonnes par ce qui reste (attaque)
+    blocks[vIdx + 1] = { text: cc.slice(cutPos), type: "c" };
+    syllStart = vIdx + 1;
   }
 
-  return null;
+  // Derniere syllabe : tout le reste
+  var lastSyl = "";
+  for (var s = syllStart; s < blocks.length; s++) lastSyl += blocks[s].text;
+  if (lastSyl) syllables.push(lastSyl);
+
+  // Fusionner les syllabes sans voyelle avec la precedente
+  var result = [];
+  for (var r = 0; r < syllables.length; r++) {
+    if (result.length > 0 && !containsVowel(syllables[r])) {
+      result[result.length - 1] += syllables[r];
+    } else {
+      result.push(syllables[r]);
+    }
+  }
+
+  return result.length > 0 ? result : [word];
 }
 
 function splitIntoOralSyllables(word) {
-  const written = splitIntoWrittenSyllables(word);
+  var written = splitIntoWrittenSyllables(word);
+  if (written.length <= 1) return written;
 
-  if (written.length <= 1) {
-    return written;
-  }
+  var result = written.slice();
 
-  const simplified = [...written];
-  mergePronouncedDiaeresisEnding(simplified, word);
-  mergeTrailingMuteESyllable(simplified, word);
-  mergeHiatusForOral(simplified);
-  mergeOuISoundForOral(simplified);
+  // 1. E muet final : fusionner si la derniere syllabe est un "e" muet
+  if (result.length >= 2) {
+    var last = result[result.length - 1].toLowerCase();
+    var wordLow = word.toLowerCase();
 
-  return simplified;
-}
-
-function mergePronouncedDiaeresisEnding(syllables, word) {
-  if (syllables.length < 2) {
-    return syllables;
-  }
-
-  const loweredWord = word.toLowerCase();
-  const matchingEnding = PRONOUNCED_DIAERESIS_ENDINGS.find((ending) =>
-    loweredWord.endsWith(ending),
-  );
-
-  if (!matchingEnding) {
-    return syllables;
-  }
-
-  const merged = [...syllables];
-  const tail = `${merged[merged.length - 2]}${merged[merged.length - 1]}`.toLowerCase();
-
-  if (tail === matchingEnding) {
-    merged[merged.length - 2] += merged[merged.length - 1];
-    merged.pop();
-  }
-
-  return merged;
-}
-
-function tokenizeWrittenWord(word) {
-  const tokens = [];
-  let index = 0;
-
-  while (index < word.length) {
-    const length = getWrittenVowelGroupLength(word, index);
-    if (length > 0) {
-      tokens.push({
-        type: "vowel",
-        text: word.slice(index, index + length),
-      });
-      index += length;
-      continue;
+    // "e" muet = derniere syllabe est juste "e", "es", "ent"
+    // OU le mot se termine par consonne(s) + e muet (table, groupe, poule...)
+    var isMuteE = false;
+    if (["e", "es", "ent"].indexOf(last) >= 0) isMuteE = true;
+    // Consonne + "e" final (ex: "le", "te", "ne", "se", "re", "pe", "be", "de", "fe", "ge", "ve", "ze", "che", "gne", "que", "phe", "the")
+    if (!isMuteE && /^[b-df-hj-np-tv-z]+e?s?$/i.test(last) && last.length <= 4) {
+      // Verifier que c'est bien un e muet et pas un "e" prononce
+      // E muet si la syllabe precedente a deja une voyelle (cas normal)
+      // Exceptions : mots courts ou le "e" est prononce (ex: "le" comme article = 1 syllabe)
+      if (result.length >= 2 && containsVowel(result[result.length - 2])) {
+        isMuteE = true;
+      }
+    }
+    // Double consonne + e : "ette", "elle", "enne", "onne", "esse", "asse"
+    if (!isMuteE && /^[b-df-hj-np-tv-z]{1,2}es?$/i.test(last)) {
+      var prevSyl = result[result.length - 2].toLowerCase();
+      // Si la syllabe precedente finit par la meme consonne → c'est une double consonne muette
+      if (prevSyl.length > 0 && last[0].toLowerCase() === prevSyl[prevSyl.length - 1].toLowerCase()) {
+        isMuteE = true;
+      }
     }
 
-    tokens.push({
-      type: "consonant",
-      text: word[index],
-    });
-    index += 1;
-  }
+    // Ne PAS fusionner si le mot se termine par une dierese prononcee
+    var hasDiaeresisEnd = PRONOUNCED_DIAERESIS_ENDINGS.some(function(e) { return wordLow.endsWith(e); });
+    if (hasDiaeresisEnd) isMuteE = false;
 
-  return tokens;
-}
-
-function getWrittenVowelGroupLength(word, start) {
-  const current = word[start] ?? "";
-
-  if (!isVowel(current.toUpperCase())) {
-    return 0;
-  }
-
-  if (hasDiaeresis(current)) {
-    return 1;
-  }
-
-  const lowered = word.toLowerCase();
-  for (const group of WRITTEN_VOWEL_GROUPS) {
-    const slice = lowered.slice(start, start + group.length);
-    if (slice === group && !containsDiaeresis(word.slice(start, start + group.length))) {
-      return group.length;
+    if (isMuteE) {
+      result[result.length - 2] += result[result.length - 1];
+      result.pop();
     }
   }
 
-  return 1;
-}
-
-function hasWrittenDoubleConsonant(cluster) {
-  return cluster.length >= 2 && cluster[0].toLowerCase() === cluster[1].toLowerCase();
-}
-
-function mergeTrailingMuteESyllable(syllables, fullWord) {
-  if (syllables.length <= 1) {
-    return;
-  }
-
-  const lastIndex = syllables.length - 1;
-  const last = syllables[lastIndex].toLowerCase();
-  const word = fullWord.toLowerCase();
-  const hasPronouncedDiaeresisEnding = PRONOUNCED_DIAERESIS_ENDINGS.some((ending) =>
-    word.endsWith(ending),
-  );
-
-  const hasMuteEEnding =
-    (!hasPronouncedDiaeresisEnding && ["e", "es", "ent"].includes(last)) ||
-    /(ette|ettes|elle|elles|enne|ennes|onne|onnes|erre|erres|amme|ammes|omme|ommes|euse|euses|eure|eures|ance|ence|anse|ense|ible|able|acle|icle|ople|uple|istre|astre|embre|ombre|ordre|arbre|ivre|ouvre|aitre|entre)$/.test(word) ||
-    /(ble|cle|dle|fle|gle|ple|tre|vre|pre|bre|cre|dre|gre)$/.test(word) ||
-    /([b-df-hj-np-tv-z])\1es?$/i.test(word);
-
-  if (hasMuteEEnding) {
-    syllables[lastIndex - 1] += syllables[lastIndex];
-    syllables.pop();
-  }
-}
-
-function mergeHiatusForOral(syllables) {
-  if (syllables.length <= 1) {
-    return;
-  }
-
-  for (let index = syllables.length - 1; index > 0; index -= 1) {
-    const current = syllables[index];
-    const previous = syllables[index - 1];
-
-    const startsWithContractableSound = /^[aeouyàâäéèêëôöùûü]/i.test(current);
-    const previousEndsWithI = /[iyîï]$/i.test(previous);
-    const currentStartsWithDiaeresis = hasDiaeresis(current[0] ?? "");
-
-    if (previousEndsWithI && startsWithContractableSound && !currentStartsWithDiaeresis) {
-      syllables[index - 1] += syllables[index];
-      syllables.splice(index, 1);
+  // 2. Hiatus i/y + voyelle → fusion (lion, pied, fille...)
+  for (var idx = result.length - 1; idx > 0; idx--) {
+    var cur = result[idx];
+    var prev = result[idx - 1];
+    if (/[iyîï]$/i.test(prev) && /^[aeouyàâäéèêëôöùûü]/i.test(cur) && !hasDiaeresis(cur[0] || "")) {
+      result[idx - 1] += result[idx];
+      result.splice(idx, 1);
     }
   }
-}
 
-function mergeOuISoundForOral(syllables) {
-  if (syllables.length <= 1) {
-    return;
-  }
-
-  for (let index = syllables.length - 1; index > 0; index -= 1) {
-    const current = syllables[index];
-    const previous = syllables[index - 1];
-
-    if (/ou$/i.test(previous) && /^i/i.test(current) && !hasDiaeresis(current[0] ?? "")) {
-      syllables[index - 1] += syllables[index];
-      syllables.splice(index, 1);
+  // 3. ou + i → fusion (louis, ouistiti...)
+  for (var idx = result.length - 1; idx > 0; idx--) {
+    var cur = result[idx];
+    var prev = result[idx - 1];
+    if (/ou$/i.test(prev) && /^i/i.test(cur) && !hasDiaeresis(cur[0] || "")) {
+      result[idx - 1] += result[idx];
+      result.splice(idx, 1);
     }
   }
+
+  return result;
 }
 
 function findNextVowel(word, start) {
