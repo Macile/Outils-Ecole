@@ -1733,12 +1733,23 @@ function splitIntoWrittenSyllables(word) {
     var found = false;
     for (var g = 0; g < WRITTEN_VOWEL_GROUPS.length; g++) {
       var grp = WRITTEN_VOWEL_GROUPS[g];
-      if (low.slice(i, i + grp.length) === grp && !containsDiaeresis(word.slice(i, i + grp.length))) {
-        chars.push({ text: word.slice(i, i + grp.length), type: "v" });
-        i += grp.length;
-        found = true;
-        break;
+      if (low.slice(i, i + grp.length) !== grp) continue;
+      if (containsDiaeresis(word.slice(i, i + grp.length))) continue;
+      // Nasales (an, en, in, on, un) : le n/m fait partie du groupe SEULEMENT si
+      // il n'est PAS suivi d'une voyelle ou d'un n/m (sinon c'est une consonne d'attaque)
+      // Ex: "banane" → b-a-n-a-n-e (pas b-an-an-e), mais "banc" → b-anc
+      var lastChar = grp[grp.length - 1];
+      if ("nm".indexOf(lastChar) >= 0) {
+        var afterGroup = low[i + grp.length] || "";
+        // Si suivi d'une voyelle → le n/m est consonne, pas nasale
+        if (afterGroup && isVowel(afterGroup.toUpperCase())) continue;
+        // Si suivi du meme n/m (double consonne: anne, enne) → pas nasale
+        if (afterGroup === lastChar) continue;
       }
+      chars.push({ text: word.slice(i, i + grp.length), type: "v" });
+      i += grp.length;
+      found = true;
+      break;
     }
     if (found) continue;
     if (hasDiaeresis(low[i])) {
