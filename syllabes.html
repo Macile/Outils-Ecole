@@ -1868,38 +1868,26 @@ function splitIntoOralSyllables(word) {
 
   var result = written.slice();
 
-  // 1. E muet final : fusionner si la derniere syllabe est un "e" muet
+  // 1. E muet final : en francais oral, un "e" (sans accent) en fin de mot est muet
+  //    Regle : si la derniere syllabe se termine par "e" ou "es" ou "ent" (sans accent),
+  //    et que ce "e" n'est pas accentue (é, è, ê), on fusionne avec la syllabe precedente.
+  //    Ex: tomate → to-mat', poule → poul', banane → ba-nan', crocodile → cro-co-dil'
   if (result.length >= 2) {
-    var last = result[result.length - 1].toLowerCase();
+    var last = result[result.length - 1];
+    var lastLow = last.toLowerCase();
     var wordLow = word.toLowerCase();
 
-    // "e" muet = derniere syllabe est juste "e", "es", "ent"
-    // OU le mot se termine par consonne(s) + e muet (table, groupe, poule...)
-    var isMuteE = false;
-    if (["e", "es", "ent"].indexOf(last) >= 0) isMuteE = true;
-    // Consonne + "e" final (ex: "le", "te", "ne", "se", "re", "pe", "be", "de", "fe", "ge", "ve", "ze", "che", "gne", "que", "phe", "the")
-    if (!isMuteE && /^[b-df-hj-np-tv-z]+e?s?$/i.test(last) && last.length <= 4) {
-      // Verifier que c'est bien un e muet et pas un "e" prononce
-      // E muet si la syllabe precedente a deja une voyelle (cas normal)
-      // Exceptions : mots courts ou le "e" est prononce (ex: "le" comme article = 1 syllabe)
-      if (result.length >= 2 && containsVowel(result[result.length - 2])) {
-        isMuteE = true;
-      }
-    }
-    // Double consonne + e : "ette", "elle", "enne", "onne", "esse", "asse"
-    if (!isMuteE && /^[b-df-hj-np-tv-z]{1,2}es?$/i.test(last)) {
-      var prevSyl = result[result.length - 2].toLowerCase();
-      // Si la syllabe precedente finit par la meme consonne → c'est une double consonne muette
-      if (prevSyl.length > 0 && last[0].toLowerCase() === prevSyl[prevSyl.length - 1].toLowerCase()) {
-        isMuteE = true;
-      }
-    }
+    // Le "e" final est muet si le mot se termine par e, es, ou ent (sans accent sur le e)
+    var endsWithMuteE = /[^éèêë]e(s|nt)?$/i.test(wordLow) || /^e(s|nt)?$/i.test(lastLow);
 
-    // Ne PAS fusionner si le mot se termine par une dierese prononcee
+    // Ne PAS fusionner si dierese prononcee (ëlle, etc.)
     var hasDiaeresisEnd = PRONOUNCED_DIAERESIS_ENDINGS.some(function(e) { return wordLow.endsWith(e); });
-    if (hasDiaeresisEnd) isMuteE = false;
+    if (hasDiaeresisEnd) endsWithMuteE = false;
 
-    if (isMuteE) {
+    // Ne PAS fusionner si le mot n'a que 2 lettres (le, me, te, se, de, ne...)
+    if (word.length <= 2) endsWithMuteE = false;
+
+    if (endsWithMuteE) {
       result[result.length - 2] += result[result.length - 1];
       result.pop();
     }
