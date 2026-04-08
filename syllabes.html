@@ -46,6 +46,10 @@ button, input, textarea, select { font: inherit; }
 .size-xl { --text-scale: 1.18; }
 
 /* ========== HEADER ========== */
+.nav-bar{display:flex;flex-wrap:wrap;gap:0;background:#1e293b}
+.nav-bar a{color:white;text-decoration:none;padding:10px 18px;font-size:0.9rem;font-weight:500;transition:background 0.15s}
+.nav-bar a.active{background:var(--primary);font-weight:700}
+.nav-bar a:hover{background:#334155}
 .app-header {
   background: linear-gradient(135deg, #2563eb, #7c3aed);
   color: white;
@@ -760,6 +764,13 @@ code {
 </head>
 <body>
 
+<nav class="nav-bar no-print" id="nav-bar">
+  <a href="index.html">Accueil</a>
+  <a href="syllabes.html" class="active">Syllabes</a>
+  <a href="mots-croises.html">Mots Croises</a>
+  <a href="boite-a-mots.html">Boite a Mots</a>
+  <a href="sudoku.html">Sudoku</a>
+</nav>
 <header class="app-header">
   <h1>Generateur de fiches syllabes</h1>
   <p>Activite de manipulation syllabique pour la maternelle ou le CP</p>
@@ -1430,7 +1441,7 @@ function renderCsvPreview(entries, ignoredLines = []) {
 
 function parseWords(rawValue) {
   return rawValue
-    .split(/\n+/)
+    .split(/[\n,;]+/)
     .map((word) => parseWordEntry(word))
     .filter(Boolean);
 }
