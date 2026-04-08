@@ -1695,7 +1695,12 @@ function splitIntoWrittenSyllables(word) {
   // Tokeniser en V et C
   const chars = [];
   let i = 0;
+  const wordLow = word.toLowerCase();
   while (i < word.length) {
+    // "qu" = bloc consonantique (le u apres q est muet)
+    if (wordLow[i] === "q" && wordLow[i + 1] === "u") {
+      chars.push({ t: "c", s: word.slice(i, i + 2) }); i += 2; continue;
+    }
     const vLen = vowelGroupLength(word, i);
     if (vLen > 0) { chars.push({ t: "v", s: word.slice(i, i + vLen) }); i += vLen; }
     else { chars.push({ t: "c", s: word[i] }); i += 1; }
