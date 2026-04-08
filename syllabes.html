@@ -1119,51 +1119,16 @@ const WRITTEN_VOWEL_GROUPS = [
   "in",
   "un",
 ];
-const NON_SPLIT_CONSONANT_GROUPS = ["ch", "ph", "th", "gn", "qu", "bl", "cl", "fl", "gl", "pl", "br", "cr", "dr", "fr", "gr", "pr", "tr", "vr"];
 const PRONOUNCED_DIAERESIS_ENDINGS = ["ëlle", "aëlle", "oëlle", "uëlle"];
-const WRITTEN_DOUBLE_CONSONANT_ENDINGS = ["anne", "enne", "onne", "amme", "omme", "ette", "elle"];
 const SYLLABLE_EXCEPTIONS = { written: {}, oral: {} };
 const DICTIONARY_STORAGE_KEY = "syllabes-teacher-dictionary-v1";
-const BUILTIN_REFERENCE = {
-  "abygaëlle": { written: ["A", "by", "ga", "ëlle"], oral: ["A", "by", "ga", "ëlle"] },
-  achille: { written: ["A", "chil", "le"], oral: ["A", "chille"] },
-  astrid: { written: ["As", "trid"], oral: ["As", "trid"] },
-  chien: { written: ["chi", "en"], oral: ["chien"] },
-  clarysse: { written: ["Cla", "rys", "se"], oral: ["Cla", "rysse"] },
-  colette: { written: ["Co", "let", "te"], oral: ["Co", "lette"] },
-  fille: { written: ["fil", "le"], oral: ["fille"] },
-  gorgia: { written: ["gor", "gi", "a"], oral: ["gorgia"] },
-  grenouille: { written: ["gre", "nou", "ille"], oral: ["grenouille"] },
-  groupe: { written: ["grou", "pe"], oral: ["groupe"] },
-  hugo: { written: ["Hu", "go"], oral: ["Hu", "go"] },
-  johann: { written: ["Jo", "hann"], oral: ["Jo", "hann"] },
-  jeanne: { written: ["Jean", "ne"], oral: ["Jeanne"] },
-  jenna: { written: ["Jen", "na"], oral: ["Jen", "na"] },
-  juliette: { written: ["Ju", "liet", "te"], oral: ["Ju", "liette"] },
-  lion: { written: ["li", "on"], oral: ["lion"] },
-  louise: { written: ["Lou", "i", "se"], oral: ["Louise"] },
-  "léo": { written: ["Lé", "o"], oral: ["Lé", "o"] },
-  "léon": { written: ["Lé", "on"], oral: ["Lé", "on"] },
-  manolo: { written: ["Ma", "no", "lo"], oral: ["Ma", "no", "lo"] },
-  mouette: { written: ["mou", "et", "te"], oral: ["mouette"] },
-  noa: { written: ["No", "a"], oral: ["No", "a"] },
-  pied: { written: ["pi", "ed"], oral: ["pied"] },
-  "sévann": { written: ["Sé", "vann"], oral: ["Sé", "vann"] },
-  table: { written: ["ta", "ble"], oral: ["table"] },
-  "téa": { written: ["Té", "a"], oral: ["Té", "a"] },
-  annabelle: { written: ["An", "na", "bel", "le"], oral: ["An", "na", "belle"] },
-  antoine: { written: ["An", "toi", "ne"], oral: ["An", "toine"] },
-  chocolat: { written: ["Cho", "co", "lat"], oral: ["Cho", "co", "lat"] },
-  crocodile: { written: ["Cro", "co", "di", "le"], oral: ["Cro", "co", "dile"] },
-  elias: { written: ["E", "li", "as"], oral: ["E", "lias"] },
-  elie: { written: ["E", "lie"], oral: ["E", "lie"] },
-  eliott: { written: ["E", "li", "ott"], oral: ["E", "liott"] },
-  eva: { written: ["E", "va"], oral: ["E", "va"] },
-  gabrielle: { written: ["Ga", "bri", "el", "le"], oral: ["Ga", "brielle"] },
-  hippopotame: { written: ["Hip", "po", "po", "ta", "me"], oral: ["Hip", "po", "po", "tame"] },
-  papillon: { written: ["Pa", "pi", "llon"], oral: ["Pa", "pi", "llon"] },
-  "éléphant": { written: ["E", "lé", "phant"], oral: ["E", "lé", "phant"] },
-};
+const VALID_ONSETS = new Set([
+  "b","c","d","f","g","h","j","k","l","m","n","p","q","r","s","t","v","w","x","z",
+  "bl","br","ch","cl","cr","dr","fl","fr","gl","gn","gr","gu",
+  "ph","pl","pr","qu","rh","sc","sk","sl","sm","sn","sp","st","sv","sw",
+  "th","tr","vr","wr","scr","spl","spr","str","sch",
+]);
+const BUILTIN_REFERENCE = {};
 
 let activityState = [];
 let selectedTokenId = null;
@@ -1701,270 +1666,132 @@ function parseManualSplit(value) {
     .filter(Boolean);
 }
 
-function splitIntoWrittenSyllables(word) {
-  const endingBasedSplit = splitWrittenDoubleConsonantEnding(word);
-  if (endingBasedSplit) {
-    return endingBasedSplit;
+/* ==========================================================================
+   SYLLABATION FRANCAISE — Algorithme par attaque maximale
+   Pas d'exceptions codees en dur : l'algo decoupe tout seul.
+   ========================================================================== */
+
+// Detecter la longueur d'un groupe vocalique a la position start
+function vowelGroupLength(word, start) {
+  const c = word[start] || "";
+  if (!isVowel(c.toUpperCase())) return 0;
+  if (hasDiaeresis(c)) return 1;
+  const low = word.toLowerCase();
+  for (const grp of WRITTEN_VOWEL_GROUPS) {
+    if (low.slice(start, start + grp.length) !== grp) continue;
+    if (containsDiaeresis(word.slice(start, start + grp.length))) continue;
+    const last = grp[grp.length - 1];
+    if ("nm".includes(last)) {
+      const after = low[start + grp.length] || "";
+      if (after && isVowel(after.toUpperCase())) continue;
+      if (after === last) continue;
+    }
+    return grp.length;
   }
-
-  const tokens = tokenizeWrittenWord(word);
-  if (tokens.length === 0) {
-    return [word];
-  }
-
-  const syllables = [];
-  let current = "";
-  let index = 0;
-
-  while (index < tokens.length) {
-    while (index < tokens.length && tokens[index].type === "consonant") {
-      current += tokens[index].text;
-      index += 1;
-    }
-
-    if (index >= tokens.length) {
-      if (current) {
-        if (syllables.length > 0) {
-          syllables[syllables.length - 1] += current;
-        } else {
-          syllables.push(current);
-        }
-      }
-      break;
-    }
-
-    current += tokens[index].text;
-    index += 1;
-
-    if (index >= tokens.length) {
-      syllables.push(current);
-      break;
-    }
-
-    const consonants = [];
-    while (index < tokens.length && tokens[index].type === "consonant") {
-      consonants.push(tokens[index].text);
-      index += 1;
-    }
-
-    if (index >= tokens.length) {
-      current += consonants.join("");
-      syllables.push(current);
-      break;
-    }
-
-    if (consonants.length === 0) {
-      syllables.push(current);
-      current = "";
-      continue;
-    }
-
-    if (consonants.length === 1) {
-      syllables.push(current);
-      current = consonants[0];
-      continue;
-    }
-
-    const joined = consonants.join("");
-    if (NON_SPLIT_CONSONANT_GROUPS.includes(joined.toLowerCase())) {
-      syllables.push(current);
-      current = joined;
-      continue;
-    }
-
-    if (hasWrittenDoubleConsonant(joined)) {
-      current += joined[0];
-      syllables.push(current);
-      current = joined.slice(1);
-      continue;
-    }
-
-    const splitIndex = Math.floor(consonants.length / 2);
-    current += consonants.slice(0, splitIndex).join("");
-    syllables.push(current);
-    current = consonants.slice(splitIndex).join("");
-  }
-
-  return mergePronouncedDiaeresisEnding(syllables.filter(Boolean), word);
+  return 1;
 }
 
-function splitWrittenDoubleConsonantEnding(word) {
-  const lowered = word.toLowerCase();
-
-  for (const ending of WRITTEN_DOUBLE_CONSONANT_ENDINGS) {
-    if (!lowered.endsWith(ending) || word.length <= ending.length) {
-      continue;
-    }
-
-    const splitIndex = word.length - (ending.length - 1);
-    return [word.slice(0, splitIndex), word.slice(splitIndex)];
+function splitIntoWrittenSyllables(word) {
+  // Tokeniser en V et C
+  const chars = [];
+  let i = 0;
+  while (i < word.length) {
+    const vLen = vowelGroupLength(word, i);
+    if (vLen > 0) { chars.push({ t: "v", s: word.slice(i, i + vLen) }); i += vLen; }
+    else { chars.push({ t: "c", s: word[i] }); i += 1; }
   }
+  // Regrouper les blocs consecutifs
+  const blocks = [];
+  for (const tok of chars) {
+    if (blocks.length > 0 && blocks[blocks.length - 1].t === tok.t) blocks[blocks.length - 1].s += tok.s;
+    else blocks.push({ t: tok.t, s: tok.s });
+  }
+  // Indices des noyaux vocaliques
+  const vIndices = [];
+  for (let b = 0; b < blocks.length; b++) if (blocks[b].t === "v") vIndices.push(b);
+  if (vIndices.length <= 1) return [word];
 
-  return null;
+  const syllables = [];
+  let start = 0;
+  for (let vi = 0; vi < vIndices.length - 1; vi++) {
+    const cur = vIndices[vi];
+    const next = vIndices[vi + 1];
+    // Hiatus (pas de consonne entre deux voyelles)
+    if (next === cur + 1) {
+      let syl = ""; for (let b = start; b <= cur; b++) syl += blocks[b].s;
+      syllables.push(syl); start = cur + 1; continue;
+    }
+    const cBlock = blocks[cur + 1];
+    if (!cBlock || cBlock.t !== "c") {
+      let syl = ""; for (let b = start; b <= cur; b++) syl += blocks[b].s;
+      syllables.push(syl); start = cur + 1; continue;
+    }
+    const cc = cBlock.s;
+    const ccLow = cc.toLowerCase();
+    // Attaque maximale : donner le max de consonnes a la syllabe suivante
+    let cutPos = -1;
+    for (let onsetLen = cc.length; onsetLen >= 1; onsetLen--) {
+      if (VALID_ONSETS.has(ccLow.slice(cc.length - onsetLen))) {
+        cutPos = cc.length - onsetLen; break;
+      }
+    }
+    if (cutPos < 0) cutPos = cc.length;
+    // Doubles consonnes identiques : couper entre les deux
+    if (cc.length >= 2) {
+      for (let d = 0; d < cc.length - 1; d++) {
+        if (ccLow[d] === ccLow[d + 1]) {
+          const rest = ccLow.slice(d + 1);
+          if (VALID_ONSETS.has(rest) || rest.length === 1) { cutPos = d + 1; break; }
+        }
+      }
+    }
+    let syl = ""; for (let b = start; b <= cur; b++) syl += blocks[b].s;
+    if (cutPos > 0) syl += cc.slice(0, cutPos);
+    syllables.push(syl);
+    blocks[cur + 1] = { t: "c", s: cc.slice(cutPos) };
+    start = cur + 1;
+  }
+  // Derniere syllabe
+  let lastSyl = ""; for (let b = start; b < blocks.length; b++) lastSyl += blocks[b].s;
+  if (lastSyl) syllables.push(lastSyl);
+  // Fusionner les syllabes sans voyelle
+  const result = [];
+  for (const syl of syllables) {
+    if (result.length > 0 && !containsVowel(syl)) result[result.length - 1] += syl;
+    else result.push(syl);
+  }
+  return result.length > 0 ? result : [word];
 }
 
 function splitIntoOralSyllables(word) {
   const written = splitIntoWrittenSyllables(word);
-
-  if (written.length <= 1) {
-    return written;
-  }
-
-  const simplified = [...written];
-  mergePronouncedDiaeresisEnding(simplified, word);
-  mergeTrailingMuteESyllable(simplified, word);
-  mergeHiatusForOral(simplified);
-  mergeOuISoundForOral(simplified);
-
-  return simplified;
-}
-
-function mergePronouncedDiaeresisEnding(syllables, word) {
-  if (syllables.length < 2) {
-    return syllables;
-  }
-
-  const loweredWord = word.toLowerCase();
-  const matchingEnding = PRONOUNCED_DIAERESIS_ENDINGS.find((ending) =>
-    loweredWord.endsWith(ending),
-  );
-
-  if (!matchingEnding) {
-    return syllables;
-  }
-
-  const merged = [...syllables];
-  const tail = `${merged[merged.length - 2]}${merged[merged.length - 1]}`.toLowerCase();
-
-  if (tail === matchingEnding) {
-    merged[merged.length - 2] += merged[merged.length - 1];
-    merged.pop();
-  }
-
-  return merged;
-}
-
-function tokenizeWrittenWord(word) {
-  const tokens = [];
-  let index = 0;
-
-  while (index < word.length) {
-    const length = getWrittenVowelGroupLength(word, index);
-    if (length > 0) {
-      tokens.push({
-        type: "vowel",
-        text: word.slice(index, index + length),
-      });
-      index += length;
-      continue;
-    }
-
-    tokens.push({
-      type: "consonant",
-      text: word[index],
-    });
-    index += 1;
-  }
-
-  return tokens;
-}
-
-function getWrittenVowelGroupLength(word, start) {
-  const current = word[start] ?? "";
-
-  if (!isVowel(current.toUpperCase())) {
-    return 0;
-  }
-
-  if (hasDiaeresis(current)) {
-    return 1;
-  }
-
-  const lowered = word.toLowerCase();
-  for (const group of WRITTEN_VOWEL_GROUPS) {
-    const slice = lowered.slice(start, start + group.length);
-    if (slice !== group || containsDiaeresis(word.slice(start, start + group.length))) {
-      continue;
-    }
-    // Nasales (an, en, in, on, un) : le n/m fait partie du groupe SEULEMENT si
-    // il n'est PAS suivi d'une voyelle (sinon c'est consonne d'attaque: ba-na-ne)
-    // et PAS suivi du meme n/m (sinon double consonne: an-ne)
-    const lastChar = group[group.length - 1];
-    if ("nm".includes(lastChar)) {
-      const afterGroup = lowered[start + group.length] ?? "";
-      if (afterGroup && isVowel(afterGroup.toUpperCase())) continue;
-      if (afterGroup === lastChar) continue;
-    }
-    return group.length;
-  }
-
-  return 1;
-}
-
-function hasWrittenDoubleConsonant(cluster) {
-  return cluster.length >= 2 && cluster[0].toLowerCase() === cluster[1].toLowerCase();
-}
-
-function mergeTrailingMuteESyllable(syllables, fullWord) {
-  if (syllables.length <= 1) {
-    return;
-  }
-
-  const lastIndex = syllables.length - 1;
-  const last = syllables[lastIndex].toLowerCase();
-  const word = fullWord.toLowerCase();
-  const hasPronouncedDiaeresisEnding = PRONOUNCED_DIAERESIS_ENDINGS.some((ending) =>
-    word.endsWith(ending),
-  );
-
-  // En francais oral, un "e" final sans accent est muet (to-mat', poul', ba-nan', cro-co-dil')
-  // Sauf mots de 2 lettres (le, me, te) et diereses prononcees
-  const hasMuteEEnding =
-    !hasPronouncedDiaeresisEnding &&
-    fullWord.length > 2 &&
-    /[^éèêë]e(s|nt)?$/i.test(word);
-
-  if (hasMuteEEnding) {
-    syllables[lastIndex - 1] += syllables[lastIndex];
-    syllables.pop();
-  }
-}
-
-function mergeHiatusForOral(syllables) {
-  if (syllables.length <= 1) {
-    return;
-  }
-
-  for (let index = syllables.length - 1; index > 0; index -= 1) {
-    const current = syllables[index];
-    const previous = syllables[index - 1];
-
-    const startsWithContractableSound = /^[aeouyàâäéèêëôöùûü]/i.test(current);
-    const previousEndsWithI = /[iyîï]$/i.test(previous);
-    const currentStartsWithDiaeresis = hasDiaeresis(current[0] ?? "");
-
-    if (previousEndsWithI && startsWithContractableSound && !currentStartsWithDiaeresis) {
-      syllables[index - 1] += syllables[index];
-      syllables.splice(index, 1);
+  if (written.length <= 1) return written;
+  const result = [...written];
+  // E muet final
+  if (result.length >= 2 && word.length > 2) {
+    const wordLow = word.toLowerCase();
+    const hasDiaeresisEnd = PRONOUNCED_DIAERESIS_ENDINGS.some(e => wordLow.endsWith(e));
+    if (!hasDiaeresisEnd && /[^éèêë]e(s|nt)?$/i.test(wordLow)) {
+      result[result.length - 2] += result[result.length - 1];
+      result.pop();
     }
   }
-}
-
-function mergeOuISoundForOral(syllables) {
-  if (syllables.length <= 1) {
-    return;
-  }
-
-  for (let index = syllables.length - 1; index > 0; index -= 1) {
-    const current = syllables[index];
-    const previous = syllables[index - 1];
-
-    if (/ou$/i.test(previous) && /^i/i.test(current) && !hasDiaeresis(current[0] ?? "")) {
-      syllables[index - 1] += syllables[index];
-      syllables.splice(index, 1);
+  // Hiatus i/y + voyelle
+  for (let idx = result.length - 1; idx > 0; idx--) {
+    if (/[iyîï]$/i.test(result[idx-1]) && /^[aeouyàâéèêëôùû]/i.test(result[idx]) && !hasDiaeresis(result[idx][0]||"")) {
+      result[idx-1] += result[idx]; result.splice(idx, 1);
     }
   }
+  // ou + i
+  for (let idx = result.length - 1; idx > 0; idx--) {
+    if (/ou$/i.test(result[idx-1]) && /^i/i.test(result[idx]) && !hasDiaeresis(result[idx][0]||"")) {
+      result[idx-1] += result[idx]; result.splice(idx, 1);
+    }
+  }
+  return result;
 }
+
+/* ancien code supprime — remplace par algorithme attaque maximale ci-dessus */
 
 function findNextVowel(word, start) {
   for (let index = start; index < word.length; index += 1) {
