@@ -1701,10 +1701,22 @@ function splitIntoWrittenSyllables(word) {
     else { chars.push({ t: "c", s: word[i] }); i += 1; }
   }
   // Regrouper les blocs consecutifs
+  // Voyelles : ne pas fusionner sauf "e" sans accent apres voyelle (lie, oue = un seul noyau)
   const blocks = [];
   for (const tok of chars) {
-    if (blocks.length > 0 && blocks[blocks.length - 1].t === tok.t) blocks[blocks.length - 1].s += tok.s;
-    else blocks.push({ t: tok.t, s: tok.s });
+    if (blocks.length > 0 && blocks[blocks.length - 1].t === tok.t) {
+      if (tok.t === "v") {
+        if (tok.s.length === 1 && /^[eE]$/.test(tok.s)) {
+          blocks[blocks.length - 1].s += tok.s;
+        } else {
+          blocks.push({ t: tok.t, s: tok.s });
+        }
+      } else {
+        blocks[blocks.length - 1].s += tok.s;
+      }
+    } else {
+      blocks.push({ t: tok.t, s: tok.s });
+    }
   }
   // Indices des noyaux vocaliques
   const vIndices = [];
@@ -1767,11 +1779,14 @@ function splitIntoOralSyllables(word) {
   const written = splitIntoWrittenSyllables(word);
   if (written.length <= 1) return written;
   const result = [...written];
-  // E muet final
+  // E muet final : seulement si la derniere syllabe est consonne(s)+e
+  // Pas de fusion si la syllabe contient une voyelle avant (lie, oie → e prononce)
   if (result.length >= 2 && word.length > 2) {
     const wordLow = word.toLowerCase();
+    const lastSyl = result[result.length - 1].toLowerCase();
     const hasDiaeresisEnd = PRONOUNCED_DIAERESIS_ENDINGS.some(e => wordLow.endsWith(e));
-    if (!hasDiaeresisEnd && /[^éèêë]e(s|nt)?$/i.test(wordLow)) {
+    const isMutePattern = /^[b-df-hj-np-tv-z]+e(s|nt)?$/i.test(lastSyl);
+    if (!hasDiaeresisEnd && isMutePattern) {
       result[result.length - 2] += result[result.length - 1];
       result.pop();
     }
