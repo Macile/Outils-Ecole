@@ -1108,6 +1108,8 @@ const WRITTEN_VOWEL_GROUPS = [
   "eau",
   "oeu",
   "au",
+  "ai",
+  "ei",
   "eu",
   "oi",
   "ou",
@@ -1117,7 +1119,7 @@ const WRITTEN_VOWEL_GROUPS = [
   "in",
   "un",
 ];
-const NON_SPLIT_CONSONANT_GROUPS = ["ch", "ph", "th", "gn", "qu"];
+const NON_SPLIT_CONSONANT_GROUPS = ["ch", "ph", "th", "gn", "qu", "bl", "cl", "fl", "gl", "pl", "br", "cr", "dr", "fr", "gr", "pr", "tr", "vr"];
 const PRONOUNCED_DIAERESIS_ENDINGS = ["ëlle", "aëlle", "oëlle", "uëlle"];
 const WRITTEN_DOUBLE_CONSONANT_ENDINGS = ["anne", "enne", "onne", "amme", "omme", "ette", "elle"];
 const SYLLABLE_EXCEPTIONS = { written: {}, oral: {} };
@@ -1149,6 +1151,18 @@ const BUILTIN_REFERENCE = {
   "sévann": { written: ["Sé", "vann"], oral: ["Sé", "vann"] },
   table: { written: ["ta", "ble"], oral: ["table"] },
   "téa": { written: ["Té", "a"], oral: ["Té", "a"] },
+  annabelle: { written: ["An", "na", "bel", "le"], oral: ["An", "na", "belle"] },
+  antoine: { written: ["An", "toi", "ne"], oral: ["An", "toine"] },
+  chocolat: { written: ["Cho", "co", "lat"], oral: ["Cho", "co", "lat"] },
+  crocodile: { written: ["Cro", "co", "di", "le"], oral: ["Cro", "co", "dile"] },
+  elias: { written: ["E", "li", "as"], oral: ["E", "lias"] },
+  elie: { written: ["E", "lie"], oral: ["E", "lie"] },
+  eliott: { written: ["E", "li", "ott"], oral: ["E", "liott"] },
+  eva: { written: ["E", "va"], oral: ["E", "va"] },
+  gabrielle: { written: ["Ga", "bri", "el", "le"], oral: ["Ga", "brielle"] },
+  hippopotame: { written: ["Hip", "po", "po", "ta", "me"], oral: ["Hip", "po", "po", "tame"] },
+  papillon: { written: ["Pa", "pi", "llon"], oral: ["Pa", "pi", "llon"] },
+  "éléphant": { written: ["E", "lé", "phant"], oral: ["E", "lé", "phant"] },
 };
 
 let activityState = [];
@@ -1894,10 +1908,10 @@ function mergeTrailingMuteESyllable(syllables, fullWord) {
   );
 
   const hasMuteEEnding =
-    (!hasPronouncedDiaeresisEnding && /e?s?$/.test(word) && /e?s?$/.test(last)) ||
-    ["e", "es", "ent"].includes(last) ||
-    /(ette|ettes|elle|elles|enne|ennes|onne|onnes|erre|erres|amme|ammes|omme|ommes|euse|euses|eure|eures|ble|cles|dle|fle|gle|ple|tre|vre)$/.test(word) ||
-    /([b-df-hj-np-tv-z])\1e?s?$/i.test(word);
+    (!hasPronouncedDiaeresisEnding && ["e", "es", "ent"].includes(last)) ||
+    /(ette|ettes|elle|elles|enne|ennes|onne|onnes|erre|erres|amme|ammes|omme|ommes|euse|euses|eure|eures|ance|ence|anse|ense|ible|able|acle|icle|ople|uple|istre|astre|embre|ombre|ordre|arbre|ivre|ouvre|aitre|entre)$/.test(word) ||
+    /(ble|cle|dle|fle|gle|ple|tre|vre|pre|bre|cre|dre|gre)$/.test(word) ||
+    /([b-df-hj-np-tv-z])\1es?$/i.test(word);
 
   if (hasMuteEEnding) {
     syllables[lastIndex - 1] += syllables[lastIndex];
