@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Test Tableau Numerique</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#f0f4ff;color:#1e293b;line-height:1.5;padding:20px}
+.container{max-width:900px;margin:0 auto}
+h1{color:#2563eb;font-size:1.8rem;margin-bottom:10px}
+.intro{background:white;border-radius:12px;padding:16px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,0.08)}
+.section{background:white;border-radius:12px;padding:16px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,0.08)}
+h2{color:#2563eb;font-size:1.1rem;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #dbeafe}
+.test{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f1f5f9}
+.test:last-child{border-bottom:none}
+.status{display:inline-block;width:24px;height:24px;border-radius:50%;text-align:center;line-height:24px;font-weight:700;color:white;flex-shrink:0}
+.ok{background:#16a34a}
+.fail{background:#ef4444}
+.warn{background:#ea580c}
+.unknown{background:#94a3b8}
+.test-name{flex:1;font-size:0.95rem}
+.test-detail{font-size:0.8rem;color:#64748b;margin-top:4px}
+.btn{display:inline-block;padding:10px 18px;background:#2563eb;color:white;text-decoration:none;border-radius:8px;border:none;font-size:0.95rem;font-weight:600;cursor:pointer;margin:5px}
+.btn:hover{background:#1d4ed8}
+.btn-warning{background:#ea580c}
+.btn-success{background:#16a34a}
+.log{background:#1e293b;color:#e2e8f0;padding:12px;border-radius:8px;font-family:monospace;font-size:0.85rem;white-space:pre-wrap;max-height:300px;overflow-y:auto;margin-top:10px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.copy-btn{background:#7c3aed}
+.summary{background:#dbeafe;border-left:4px solid #2563eb;padding:12px;border-radius:8px;margin:10px 0;font-size:0.9rem}
+input[type="text"]{width:100%;padding:8px 12px;border:2px solid #cbd5e1;border-radius:8px;margin-top:8px;font-size:0.95rem}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>Test Tableau Numerique</h1>
+<div class="intro">
+  <p>Cette page teste le navigateur du tableau numerique pour identifier ce qui fonctionne ou pas. Lance les tests un par un, puis copie le rapport et envoie-le.</p>
+</div>
+
+<div class="section">
+  <h2>1. Informations navigateur</h2>
+  <div id="info"></div>
+</div>
+
+<div class="section">
+  <h2>2. Tests automatiques (JavaScript)</h2>
+  <div id="auto-tests"></div>
+</div>
+
+<div class="section">
+  <h2>3. Tests de liens (a tester manuellement)</h2>
+  <p style="font-size:0.9rem;color:#64748b;margin-bottom:10px">Clique sur chaque bouton et note ce qui se passe :</p>
+  <div class="actions">
+    <a href="sudoku.html" class="btn">Lien direct sudoku</a>
+    <a href="sudoku.html" target="_blank" class="btn">Lien sudoku (nouvel onglet)</a>
+    <a href="./sudoku.html" class="btn">Lien relatif ./sudoku</a>
+    <button class="btn btn-warning" onclick="window.location.href='sudoku.html'">JS window.location</button>
+    <button class="btn btn-warning" onclick="window.open('sudoku.html','_blank')">JS window.open</button>
+  </div>
+  <input type="text" id="lien-resultat" placeholder="Ecris ici ce qui se passe quand tu cliques (erreur, page blanche, page chargee...)">
+</div>
+
+<div class="section">
+  <h2>4. Tests interactifs</h2>
+  <div class="actions">
+    <button class="btn btn-success" onclick="testInput()">Test saisie clavier</button>
+    <button class="btn btn-success" onclick="testTouch()">Test tactile</button>
+    <button class="btn btn-success" onclick="testCanvas()">Test affichage</button>
+    <button class="btn btn-success" onclick="testFile()">Test lecture fichier</button>
+  </div>
+  <input type="text" id="input-test" placeholder="Tape ici pour tester le clavier">
+  <div id="touch-zone" style="margin-top:10px;padding:30px;background:#f1f5f9;border:2px dashed #cbd5e1;border-radius:8px;text-align:center;color:#64748b">Touche ici pour tester le tactile</div>
+  <canvas id="canvas-test" width="200" height="50" style="margin-top:10px;border:1px solid #cbd5e1;border-radius:4px"></canvas>
+  <input type="file" id="file-test" style="margin-top:10px">
+</div>
+
+<div class="section">
+  <h2>5. Rapport a copier</h2>
+  <div class="summary">Copie tout le rapport ci-dessous et envoie-le par message a Claude pour analyse.</div>
+  <button class="btn copy-btn" onclick="copyReport()">Copier le rapport</button>
+  <button class="btn btn-success" onclick="downloadReport()">Telecharger le rapport (.txt)</button>
+  <div id="report" class="log"></div>
+</div>
+
+</div>
+
+<script>
+var log = [];
+function addLog(category, name, status, detail) {
+  log.push({category: category, name: name, status: status, detail: detail || ''});
+}
+
+// 1. Informations navigateur
+function fillInfo() {
+  var infoDiv = document.getElementById('info');
+  var info = {
+    'User Agent': navigator.userAgent,
+    'Plateforme': navigator.platform || 'inconnue',
+    'Langue': navigator.language || 'inconnue',
+    'URL actuelle': window.location.href,
+    'Protocole': window.location.protocol,
+    'Taille ecran': window.screen.width + 'x' + window.screen.height,
+    'Taille fenetre': window.innerWidth + 'x' + window.innerHeight,
+    'Pixel ratio': window.devicePixelRatio || 1,
+    'Touch': ('ontouchstart' in window) ? 'OUI' : 'NON',
+    'Online': navigator.onLine ? 'OUI' : 'NON'
+  };
+  var html = '';
+  for (var key in info) {
+    html += '<div class="test"><span class="status unknown">i</span><div class="test-name"><strong>' + key + '</strong><div class="test-detail">' + info[key] + '</div></div></div>';
+    addLog('Info', key, 'info', info[key]);
+  }
+  infoDiv.innerHTML = html;
+}
+
+// 2. Tests automatiques
+function runAutoTests() {
+  var div = document.getElementById('auto-tests');
+  var tests = [];
+
+  // ES6
+  tests.push({name: 'JavaScript ES6 (let, const, arrow)', fn: function() {
+    try { eval("let a = 1; const b = 2; var f = () => 3;"); return true; } catch(e) { return false; }
+  }});
+
+  // Fetch API
+  tests.push({name: 'Fetch API', fn: function() { return typeof fetch === 'function'; }});
+
+  // LocalStorage
+  tests.push({name: 'LocalStorage', fn: function() {
+    try { localStorage.setItem('t','1'); var ok = localStorage.getItem('t')==='1'; localStorage.removeItem('t'); return ok; } catch(e) { return false; }
+  }});
+
+  // Clipboard API
+  tests.push({name: 'Clipboard API (copier)', fn: function() {
+    return navigator.clipboard && typeof navigator.clipboard.writeText === 'function';
+  }});
+
+  // FileReader
+  tests.push({name: 'FileReader (import fichier)', fn: function() { return typeof FileReader === 'function'; }});
+
+  // Drag and drop
+  tests.push({name: 'Drag and drop API', fn: function() {
+    var div = document.createElement('div');
+    return ('draggable' in div) || ('ondragstart' in div && 'ondrop' in div);
+  }});
+
+  // CSS Grid
+  tests.push({name: 'CSS Grid', fn: function() { return CSS && CSS.supports && CSS.supports('display','grid'); }});
+
+  // CSS Flexbox
+  tests.push({name: 'CSS Flexbox', fn: function() { return CSS && CSS.supports && CSS.supports('display','flex'); }});
+
+  // SVG
+  tests.push({name: 'SVG inline', fn: function() {
+    return document.createElementNS && !!document.createElementNS('http://www.w3.org/2000/svg','svg').createSVGRect;
+  }});
+
+  // Canvas
+  tests.push({name: 'Canvas 2D', fn: function() {
+    var c = document.createElement('canvas'); return !!(c.getContext && c.getContext('2d'));
+  }});
+
+  // Print
+  tests.push({name: 'Impression (window.print)', fn: function() { return typeof window.print === 'function'; }});
+
+  // Fullscreen
+  tests.push({name: 'Plein ecran API', fn: function() {
+    return !!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen);
+  }});
+
+  var html = '';
+  for (var i = 0; i < tests.length; i++) {
+    var ok;
+    try { ok = tests[i].fn(); } catch(e) { ok = false; }
+    var cls = ok ? 'ok' : 'fail';
+    var sym = ok ? 'OK' : 'X';
+    var status = ok ? 'OK' : 'FAIL';
+    html += '<div class="test"><span class="status ' + cls + '">' + sym + '</span><div class="test-name">' + tests[i].name + '</div></div>';
+    addLog('Auto', tests[i].name, status);
+  }
+  div.innerHTML = html;
+}
+
+// 4. Tests interactifs
+function testInput() {
+  var v = document.getElementById('input-test').value;
+  alert(v ? 'Saisie OK : "' + v + '"' : 'Tape d\'abord du texte dans le champ');
+  addLog('Manuel', 'Saisie clavier', v ? 'OK' : 'VIDE', v);
+  updateReport();
+}
+
+function testTouch() {
+  var zone = document.getElementById('touch-zone');
+  var touched = false;
+  zone.addEventListener('touchstart', function() { touched = true; zone.textContent = 'Tactile detecte !'; zone.style.background='#dcfce7'; });
+  zone.addEventListener('click', function() { if (!touched) { zone.textContent = 'Click souris detecte (pas tactile)'; zone.style.background='#fef3c7'; } });
+  alert('Touche la zone grise pour tester');
+  setTimeout(function() {
+    addLog('Manuel', 'Tactile', touched ? 'OK' : 'NON-TACTILE', zone.textContent);
+    updateReport();
+  }, 3000);
+}
+
+function testCanvas() {
+  var c = document.getElementById('canvas-test');
+  var ctx = c.getContext('2d');
+  ctx.fillStyle = '#2563eb';
+  ctx.fillRect(0, 0, 200, 50);
+  ctx.fillStyle = 'white';
+  ctx.font = '20px sans-serif';
+  ctx.fillText('Affichage OK', 30, 32);
+  addLog('Manuel', 'Canvas affichage', 'OK');
+  updateReport();
+}
+
+function testFile() {
+  var f = document.getElementById('file-test');
+  if (!f.files || f.files.length === 0) {
+    alert('Choisis d\'abord un fichier dans le selecteur');
+    return;
+  }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    alert('Fichier lu : ' + f.files[0].name + ' (' + f.files[0].size + ' octets)');
+    addLog('Manuel', 'Lecture fichier', 'OK', f.files[0].name);
+    updateReport();
+  };
+  reader.onerror = function() {
+    alert('Erreur lecture fichier');
+    addLog('Manuel', 'Lecture fichier', 'FAIL');
+    updateReport();
+  };
+  reader.readAsText(f.files[0]);
+}
+
+// 5. Rapport
+function updateReport() {
+  var lr = document.getElementById('lien-resultat').value;
+  if (lr) addLog('Manuel', 'Liens entre pages', 'NOTE', lr);
+
+  var report = '=== RAPPORT TEST TABLEAU NUMERIQUE ===\n';
+  report += 'Date : ' + new Date().toLocaleString('fr-FR') + '\n\n';
+  var current = '';
+  for (var i = 0; i < log.length; i++) {
+    if (log[i].category !== current) {
+      current = log[i].category;
+      report += '\n--- ' + current + ' ---\n';
+    }
+    report += '[' + log[i].status + '] ' + log[i].name;
+    if (log[i].detail) report += ' : ' + log[i].detail;
+    report += '\n';
+  }
+  document.getElementById('report').textContent = report;
+}
+
+function copyReport() {
+  updateReport();
+  var text = document.getElementById('report').textContent;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function() { alert('Rapport copie ! Colle-le dans un message.'); });
+  } else {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); alert('Rapport copie !'); }
+    catch(e) { alert('Impossible de copier automatiquement. Selectionne le rapport et copie-le manuellement.'); }
+    document.body.removeChild(ta);
+  }
+}
+
+function downloadReport() {
+  updateReport();
+  var text = document.getElementById('report').textContent;
+  var d = new Date();
+  var ts = d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2) + '_' + ('0'+d.getHours()).slice(-2) + 'h' + ('0'+d.getMinutes()).slice(-2);
+  var filename = 'rapport-test-tableau-' + ts + '.txt';
+
+  // Methode moderne : File System Access API (Chrome 86+)
+  if (window.showSaveFilePicker) {
+    window.showSaveFilePicker({
+      suggestedName: filename,
+      types: [{description: 'Texte', accept: {'text/plain': ['.txt']}}]
+    }).then(function(handle) {
+      return handle.createWritable().then(function(writable) {
+        writable.write(text);
+        return writable.close();
+      });
+    }).then(function() {
+      alert('Rapport enregistre. Choisis la cle USB si elle apparait.');
+    }).catch(function(e) {
+      // Fallback download classique
+      classicDownload(text, filename);
+    });
+  } else {
+    classicDownload(text, filename);
+  }
+}
+
+function classicDownload(text, filename) {
+  var blob = new Blob([text], {type: 'text/plain;charset=utf-8'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function() {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    alert('Rapport telecharge : ' + filename + '\n\nCherche-le dans le dossier Telechargements et copie-le sur la cle.');
+  }, 100);
+}
+
+// Lancer les tests
+fillInfo();
+runAutoTests();
+updateReport();
+
+// Mettre a jour le rapport quand on tape dans le champ liens
+document.getElementById('lien-resultat').addEventListener('input', updateReport);
+</script>
+
+</body>
+</html>
